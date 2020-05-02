@@ -1,0 +1,13 @@
+out
+
+[Oo]bj
+[Bb]in
+[Ll]ibrary
+[Tt]emp
+[Ll]ogs
+reaura/**/*.csproj
+reaura/**/*.sln
+
+.vs
+.vscode
+
