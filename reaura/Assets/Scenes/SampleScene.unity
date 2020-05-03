@@ -318,6 +318,7 @@ GameObject:
   - component: {fileID: 963194227}
   - component: {fileID: 963194226}
   - component: {fileID: 963194229}
+  - component: {fileID: 963194230}
   m_Layer: 0
   m_Name: Main Camera
   m_TagString: MainCamera
@@ -405,6 +406,24 @@ MonoBehaviour:
   maxPitch: 75.625
   horizontalSpeed: 400
   verticalSpeed: -400
+--- !u!114 &963194230
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 963194225}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 68c940ef765f487418dc4dbb75d9b22e, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  renderTexture: {fileID: 8400000, guid: ea9cd7d169cb9b240bfa4f5e17f8e809, type: 2}
+  testTexture: {fileID: 2800000, guid: ce0e3d40a94cc434e9393ed6f5f4d3f3, type: 3}
+  pos: {x: 312, y: 538}
+  size: {x: 64, y: 64}
+  face: 5
+  blend: {fileID: 2100000, guid: 9a9a9df0d5fa87d45bae68e1c0158c62, type: 2}
 --- !u!1 &1929236182
 GameObject:
   m_ObjectHideFlags: 0
