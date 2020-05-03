@@ -1,71 +1,77 @@
 ﻿using UnityEngine;
 using System.Collections;
 
-public class AuraSpriteRenderer : MonoBehaviour
+namespace Aura
 {
-    [SerializeField]
-    private Texture texture = null;
-    [SerializeField]
-    private Vector2 texturePos = Vector2.zero;
-    [SerializeField]
-    private CubemapFace face = CubemapFace.Unknown;
-
-    public Texture Texture
+    public class AuraSpriteRenderer : MonoBehaviour
     {
-        get => texture;
-        set
+        [SerializeField]
+        private Texture texture = null;
+        [SerializeField]
+        private Vector2 texturePos = Vector2.zero;
+        [SerializeField]
+        private CubemapFace face = CubemapFace.Unknown;
+
+        public Texture Texture
         {
-            texture = value;
-            IsDirty = true;
+            get => texture;
+            set
+            {
+                texture = value;
+                IsDirty = true;
+            }
         }
-    }
 
-    public Vector2 TexturePos
-    {
-        get => texturePos;
-        set
+        public Vector2 TexturePos
         {
-            texturePos = value;
-            IsDirty = true;
+            get => texturePos;
+            set
+            {
+                texturePos = value;
+                IsDirty = true;
+            }
         }
-    }
 
-    public CubemapFace Face
-    {
-        get => face;
-        set
+        public CubemapFace Face
         {
-            face = value;
-            worldRenderer.UnregisterSprite(this);
+            get => face;
+            set
+            {
+                face = value;
+                if (worldRenderer != null)
+                {
+                    worldRenderer.UnregisterSprite(this);
+                    worldRenderer.RegisterSprite(this);
+                }
+            }
+        }
+
+        public bool IsDirty
+        {
+            set
+            {
+                if (value && worldRenderer != null)
+                    worldRenderer.SetSpriteDirty(this);
+            }
+        }
+
+        private AuraWorldRenderer worldRenderer;
+
+        private void Awake()
+        {
+            worldRenderer = FindObjectOfType<AuraWorldRenderer>();
+            if (worldRenderer == null)
+                throw new MissingReferenceException("AuraSprite cannot find the world renderer");
+        }
+
+        private void OnEnable()
+        {
             worldRenderer.RegisterSprite(this);
         }
-    }
 
-    public bool IsDirty
-    {
-        set
+        private void OnDisable()
         {
-            if (value && worldRenderer != null)
-                worldRenderer.SetSpriteDirty(this);
+            worldRenderer.UnregisterSprite(this);
         }
-    }
-
-    private AuraWorldRenderer worldRenderer;
-
-    private void Awake()
-    {
-        worldRenderer = FindObjectOfType<AuraWorldRenderer>();
-        if (worldRenderer == null)
-            throw new MissingReferenceException("AuraSprite cannot find the world renderer");
-    }
-
-    private void OnEnable()
-    {
-        worldRenderer.RegisterSprite(this);
-    }
-
-    private void OnDisable()
-    {
-        worldRenderer.UnregisterSprite(this);
     }
 }

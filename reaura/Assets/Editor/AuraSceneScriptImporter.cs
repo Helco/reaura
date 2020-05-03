@@ -28,6 +28,15 @@ public class AuraSceneScriptImporter : ScriptedImporter
         sceneGO = new GameObject($"Scene {sceneName}");
         ctx.AddObjectToAsset(sceneGO.name, sceneGO);
         ctx.SetMainObject(sceneGO);
+
+        ImportGraphicList(ctx, sceneScript.EntityLists["&Fon_Animate"] as GraphicListNode, new Dictionary<string, string>()
+        {
+            { "PlayAVI", nameof(Import_FonAnimate_LoadAVI) }
+        });
+        ImportGraphicList(ctx, sceneScript.EntityLists["&Sprites"] as GraphicListNode, new Dictionary<string, string>()
+        {
+            { "Sprite", nameof(Import_Sprites_Sprite) }
+        });
     }
 
     private Dictionary<string, string> ReadFiles(AssetImportContext ctx)
@@ -66,17 +75,17 @@ public class AuraSceneScriptImporter : ScriptedImporter
         (csharp: typeof(CubemapFace), aura: typeof(StringNode), converter: (ctx, v) =>
         {
             string constantName = (v as StringNode).Value;
-            if (constantName == "FRONT") return CubemapFace.NegativeZ;
-            if (constantName == "BACK") return CubemapFace.PositiveZ;
-            if (constantName == "RIGHT") return CubemapFace.NegativeX;
-            if (constantName == "LEFT") return CubemapFace.PositiveX;
-            if (constantName == "UP") return CubemapFace.PositiveY;
-            if (constantName == "DOWN") return CubemapFace.NegativeY;
+            if (constantName == "FRONT") return CubemapFace.PositiveZ;
+            if (constantName == "BACKK") return CubemapFace.NegativeZ;
+            if (constantName == "RIGHT") return CubemapFace.PositiveX;
+            if (constantName == "LEFTT") return CubemapFace.NegativeX;
+            if (constantName == "UPPPP") return CubemapFace.PositiveY;
+            if (constantName == "DOWNN") return CubemapFace.NegativeY;
             throw new Exception($"No known face name {constantName}");
         }),
         (csharp: typeof(VideoClip), aura: typeof(StringNode), converter: (AssetImportContext ctx, ValueNode v) =>
         {
-            string path = (v as StringNode).Value;
+            string path = (v as StringNode).Value.Replace(".bik", ".webm");
             if (path.StartsWith(".\\"))
                 path = path.Substring(2);
             path = Path.Combine(Path.GetDirectoryName(ctx.assetPath), path);
@@ -84,18 +93,30 @@ public class AuraSceneScriptImporter : ScriptedImporter
             if (clip == null)
                 throw new Exception($"Could not find video at {path}");
             return clip;
+        }),
+        (csharp: typeof(Texture2D), aura: typeof(StringNode), converter: (AssetImportContext ctx, ValueNode v) =>
+        {
+            string path = (v as StringNode).Value;
+            if (path.StartsWith(".\\"))
+                path = path.Substring(2);
+            path = Path.Combine(Path.GetDirectoryName(ctx.assetPath), path);
+            var tex = AssetDatabase.LoadAssetAtPath<Texture2D>(path);
+            if (tex == null)
+                throw new Exception($"Could not find texture at {path}");
+            return tex;
         })
     };
 
     private void ImportGraphicList(AssetImportContext ctx, GraphicListNode graphicList, IReadOnlyDictionary<string, string> methodMapping)
     {
+        new GameObject(graphicList.Name.Substring(1)).transform.parent = sceneGO.transform;
         foreach (var graphic in graphicList.Graphics.Values)
         {
             var call = graphic.Value;
             if (!methodMapping.TryGetValue(call.Function, out var csharpMethodName))
                 throw new Exception($"No mapping for AuraScript function {call.Function}");
 
-            var csharpMethod = GetType().GetMethod(csharpMethodName, System.Reflection.BindingFlags.NonPublic);
+            var csharpMethod = GetType().GetMethod(csharpMethodName, System.Reflection.BindingFlags.NonPublic | System.Reflection.BindingFlags.Instance);
             var csharpParams = csharpMethod.GetParameters();
             if (csharpParams.Length != call.Arguments.Count() + 1)
                 throw new Exception($"Invalid number for AuraScript function {call.Function}");
@@ -111,7 +132,7 @@ public class AuraSceneScriptImporter : ScriptedImporter
                 if (auraArgument == null)
                 {
                     if (csharpParams[i + 1].CustomAttributes.Any(a => a.AttributeType == typeof(AuraOptionalAttribute)))
-                        args[i] = null;
+                        args[i + 1] = null;
                     else
                         throw new Exception($"Parameter {i + 1} for {call.Function} is not optional");
                 }
@@ -121,7 +142,7 @@ public class AuraSceneScriptImporter : ScriptedImporter
                     if (mapping.converter == null)
                         throw new Exception($"No known mapping between C# {csharpParamType.Name} and Aura {auraArgument.GetType().Name}");
                     else
-                        args[i] = mapping.converter(ctx, auraArgument);
+                        args[i + 1] = mapping.converter(ctx, auraArgument);
                 }
             }
             csharpMethod.Invoke(this, args);
@@ -134,9 +155,23 @@ public class AuraSceneScriptImporter : ScriptedImporter
         var go = Instantiate(prefab);
         go.name = $"Video {id} {clip.name}";
         go.GetComponent<VideoPlayer>().clip = clip;
-        var sprite = go.GetComponent<AuraSpriteRenderer>();
+        var sprite = go.GetComponent<Aura.AuraSpriteRenderer>();
+        sprite.TexturePos = new Vector2(posX, posY);
+        sprite.Face = face;
+        go.transform.parent = sceneGO.transform.Find("Fon_Animate");
     }
 
+    private void Import_Sprites_Sprite(int id, Texture2D texture, int posX, int posY, CubemapFace face)
+    {
+        var prefab = AssetDatabase.LoadAssetAtPath<GameObject>("Assets/AuraSprite.prefab");
+        var go = Instantiate(prefab);
+        go.name = $"Sprite {id} {texture.name}";
+        var sprite = go.GetComponent<Aura.AuraSpriteRenderer>();
+        sprite.Texture = texture;
+        sprite.TexturePos = new Vector2(posX, posY);
+        sprite.Face = face;
+        go.transform.parent = sceneGO.transform.Find("Sprites");
+    }
 
     private class AuraOptionalAttribute : Attribute
     {
