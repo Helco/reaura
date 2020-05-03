@@ -4,7 +4,7 @@ using System.Collections.Generic;
 using System.Linq;
 using UnityEngine;
 
-public class WorldRenderer : MonoBehaviour
+public class AuraWorldRenderer : MonoBehaviour
 {
     private static readonly IReadOnlyDictionary<CubemapFace, Vector2Int> worldFacePositions = new Dictionary<CubemapFace, Vector2Int>()
     {
@@ -40,15 +40,15 @@ public class WorldRenderer : MonoBehaviour
     private bool allDirty = true;
     private HashSet<CubemapFace> facesDirty = new HashSet<CubemapFace>();
     private int clipNameID, spriteNameID;
-    private Dictionary<CubemapFace, HashSet<AuraSprite>> sprites = new Dictionary<CubemapFace, HashSet<AuraSprite>>()
+    private Dictionary<CubemapFace, HashSet<AuraSpriteRenderer>> sprites = new Dictionary<CubemapFace, HashSet<AuraSpriteRenderer>>()
     {
         // do it here to always ensure it is already initialized
-        { CubemapFace.PositiveX, new HashSet<AuraSprite>() },
-        { CubemapFace.NegativeX, new HashSet<AuraSprite>() },
-        { CubemapFace.PositiveY, new HashSet<AuraSprite>() },
-        { CubemapFace.NegativeY, new HashSet<AuraSprite>() },
-        { CubemapFace.PositiveZ, new HashSet<AuraSprite>() },
-        { CubemapFace.NegativeZ, new HashSet<AuraSprite>() }
+        { CubemapFace.PositiveX, new HashSet<AuraSpriteRenderer>() },
+        { CubemapFace.NegativeX, new HashSet<AuraSpriteRenderer>() },
+        { CubemapFace.PositiveY, new HashSet<AuraSpriteRenderer>() },
+        { CubemapFace.NegativeY, new HashSet<AuraSpriteRenderer>() },
+        { CubemapFace.PositiveZ, new HashSet<AuraSpriteRenderer>() },
+        { CubemapFace.NegativeZ, new HashSet<AuraSpriteRenderer>() }
     };
 
     private void Awake()
@@ -102,7 +102,7 @@ public class WorldRenderer : MonoBehaviour
         return new Vector4(4.0f, 2.0f, -pos.x, -pos.y);
     }
 
-    public void RegisterSprite(AuraSprite sprite)
+    public void RegisterSprite(AuraSpriteRenderer sprite)
     {
         if (sprite.Face == CubemapFace.Unknown)
             return;
@@ -110,7 +110,7 @@ public class WorldRenderer : MonoBehaviour
         facesDirty.Add(sprite.Face);
     }
 
-    public void UnregisterSprite(AuraSprite sprite)
+    public void UnregisterSprite(AuraSpriteRenderer sprite)
     {
         if (sprite.Face == CubemapFace.Unknown)
             return;
@@ -118,7 +118,7 @@ public class WorldRenderer : MonoBehaviour
         facesDirty.Add(sprite.Face);
     }
 
-    public void SetSpriteDirty(AuraSprite sprite)
+    public void SetSpriteDirty(AuraSpriteRenderer sprite)
     {
         if (sprite.Face == CubemapFace.Unknown)
             return;

@@ -1,7 +1,7 @@
 ﻿using UnityEngine;
 using System.Collections;
 
-public class AuraSprite : MonoBehaviour
+public class AuraSpriteRenderer : MonoBehaviour
 {
     [SerializeField]
     private Texture texture = null;
@@ -45,16 +45,16 @@ public class AuraSprite : MonoBehaviour
     {
         set
         {
-            if (value)
+            if (value && worldRenderer != null)
                 worldRenderer.SetSpriteDirty(this);
         }
     }
 
-    private WorldRenderer worldRenderer;
+    private AuraWorldRenderer worldRenderer;
 
     private void Awake()
     {
-        worldRenderer = FindObjectOfType<WorldRenderer>();
+        worldRenderer = FindObjectOfType<AuraWorldRenderer>();
         if (worldRenderer == null)
             throw new MissingReferenceException("AuraSprite cannot find the world renderer");
     }
