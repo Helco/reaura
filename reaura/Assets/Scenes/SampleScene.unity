@@ -38,13 +38,13 @@ RenderSettings:
   m_ReflectionIntensity: 1
   m_CustomReflection: {fileID: 0}
   m_Sun: {fileID: 0}
-  m_IndirectSpecularColor: {r: 0.40289122, g: 0.28554744, b: 0.26491225, a: 1}
+  m_IndirectSpecularColor: {r: 0, g: 0, b: 0, a: 1}
   m_UseRadianceAmbientProbe: 0
 --- !u!157 &3
 LightmapSettings:
   m_ObjectHideFlags: 0
   serializedVersion: 11
-  m_GIWorkflowMode: 0
+  m_GIWorkflowMode: 1
   m_GISettings:
     serializedVersion: 2
     m_BounceScale: 1
@@ -261,6 +261,52 @@ CanvasRenderer:
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 406106718}
   m_CullTransparentMesh: 0
+--- !u!1 &817720256
+GameObject:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  serializedVersion: 6
+  m_Component:
+  - component: {fileID: 817720258}
+  - component: {fileID: 817720257}
+  m_Layer: 0
+  m_Name: Box009
+  m_TagString: Untagged
+  m_Icon: {fileID: 0}
+  m_NavMeshLayer: 0
+  m_StaticEditorFlags: 0
+  m_IsActive: 1
+--- !u!114 &817720257
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 817720256}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 12982ea72c23eb1419bc803a2b7f5b79, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  texture: {fileID: 2800000, guid: ce0e3d40a94cc434e9393ed6f5f4d3f3, type: 3}
+  texturePos: {x: 312, y: 538}
+  face: 5
+--- !u!4 &817720258
+Transform:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 817720256}
+  m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
+  m_LocalPosition: {x: 0, y: 0, z: 0}
+  m_LocalScale: {x: 1, y: 1, z: 1}
+  m_Children: []
+  m_Father: {fileID: 0}
+  m_RootOrder: 4
+  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
 --- !u!1 &878986135
 GameObject:
   m_ObjectHideFlags: 0
@@ -418,12 +464,9 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 68c940ef765f487418dc4dbb75d9b22e, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
+  spriteMaterial: {fileID: 2100000, guid: 9a9a9df0d5fa87d45bae68e1c0158c62, type: 2}
   renderTexture: {fileID: 8400000, guid: ea9cd7d169cb9b240bfa4f5e17f8e809, type: 2}
-  testTexture: {fileID: 2800000, guid: ce0e3d40a94cc434e9393ed6f5f4d3f3, type: 3}
-  pos: {x: 312, y: 538}
-  size: {x: 64, y: 64}
-  face: 5
-  blend: {fileID: 2100000, guid: 9a9a9df0d5fa87d45bae68e1c0158c62, type: 2}
+  worldMap: {fileID: 2800000, guid: b7732fe328f02414f8756d3f0d6010c1, type: 3}
 --- !u!1 &1929236182
 GameObject:
   m_ObjectHideFlags: 0

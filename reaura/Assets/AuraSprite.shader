@@ -37,20 +37,22 @@
             };
 
             sampler2D _MainTex;
+            float4 clip;
             float4 sprite;
 
             v2f vert (appdata v)
             {
                 v2f o;
                 o.vertex = UnityObjectToClipPos(v.vertex);
-                o.uv = (v.uv.xy - sprite.zw) / sprite.xy * float2(1, -1);
+                o.uv = v.uv;
+                o.uv = (o.uv.xy - sprite.zw - float2(0, sprite.y)) / sprite.xy * float2(1, -1);
                 UNITY_TRANSFER_FOG(o,o.vertex);
                 return o;
             }
 
             fixed4 frag(v2f i) : SV_Target
             {
-                if (i.uv.x < 0 || i.uv.x > 1 || i.uv.y < 0 || i.uv.y > 1)
+                if (i.uv.x < clip.x || i.uv.x > clip.z || i.uv.y < clip.y || i.uv.y > clip.w)
                     discard;
                 fixed4 col = tex2D(_MainTex, i.uv);
                 return col;

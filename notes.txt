@@ -1,1 +1,1 @@
-/c/temp/ffmpeg.exe -i 009.bik -frames 1 -vf "shuffleframes='1 3 5 4 0 2',tile=6x1" c:/dev/reaure/Assets/009.png
+/c/temp/ffmpeg.exe -i 009.bik -frames 1 -vf "shuffleframes='tile=4x2" c:/dev/reaure/Assets/009.png
