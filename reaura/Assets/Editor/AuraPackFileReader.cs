@@ -25,7 +25,7 @@ public class AuraPackFileReader
         for (;  length >= 4; length -= 4)
             memWriter.Write(ReadU32());
         for (; length > 0; length--)
-            memWriter.Write(reader.ReadByte() ^ xorKeyByte);
+            memWriter.Write((byte)(reader.ReadByte() ^ xorKeyByte));
         memWriter.Close();
         return memStream.ToArray();
     }

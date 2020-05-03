@@ -27,12 +27,14 @@ namespace Aura.Script
             private static readonly IReadOnlyDictionary<char, TokenType> SingleCharTokens = new Dictionary<char, TokenType>()
             {
                 { '{', TokenType.BlockBracketOpen },
-                { '}', TokenType.BlockBracketOpen },
+                { '}', TokenType.BlockBracketClose },
                 { '(', TokenType.ExprBracketOpen },
                 { ')', TokenType.ExprBracketClose },
                 { '[', TokenType.TupleBracketOpen },
                 { ']', TokenType.TupleBracketClose },
-                { ';', TokenType.Semicolon }
+                { ';', TokenType.Semicolon },
+                { ':', TokenType.Colon },
+                { ',', TokenType.Comma }
             };
 
             private Tokenizer source;
@@ -116,7 +118,7 @@ namespace Aura.Script
                 char ch = (char)chI;
 
                 ScriptPos tokenStart = position;
-                if (char.IsLetter(ch) || "_.$@&".Contains(ch))
+                if (char.IsLetter(ch) || "_.\\$@&".Contains(ch))
                 {
                     string value = "" + (char)Read();
                     if (ch == '&' && Peek() == '&')
@@ -127,15 +129,15 @@ namespace Aura.Script
                     }
 
                     Current = new Token(TokenType.Identifier, position - tokenStart,
-                        ReadWhile(value, c => char.IsLetterOrDigit(c) || "_.".Contains(c)));
+                        ReadWhile(value, c => char.IsLetterOrDigit(c) || "_.\\".Contains(c)));
                     return true;
                 }
 
                 if (char.IsDigit(ch) || ch == '-')
                 {
-                    string value = ReadWhile("" + Read(), char.IsDigit);
+                    string value = ReadWhile("" + (char)Read(), char.IsDigit);
                     if (value == "-")
-                        throw new TokenizerException(tokenStart, "Unexpected symbol '\n'");
+                        throw new Exception("Numbers need at least one digit");
                     Current = new Token(TokenType.Integer, position - tokenStart, value);
                     return true;
                 }
@@ -144,7 +146,7 @@ namespace Aura.Script
                 {
                     Read();
                     if (Peek() != '|')
-                        throw new TokenizerException(tokenStart, "Unexpected symbol '\n'");
+                        throw new Exception($"Unexpected symbol '{(char)Peek()}', expected '|'");
                     Read();
                     Current = new Token(TokenType.LogicalOr, position - tokenStart);
                     return true;
@@ -163,6 +165,16 @@ namespace Aura.Script
                     return true;
                 }
 
+                if (ch == '!')
+                {
+                    Read();
+                    if (Peek() != '=')
+                        throw new Exception($"Unexpected symbol '{(char)Peek()}', expected '='");
+                    Read();
+                    Current = new Token(TokenType.NotEquals, position - tokenStart);
+                    return true;
+                }
+
                 if (SingleCharTokens.ContainsKey(ch))
                 {
                     Read();
@@ -173,19 +185,5 @@ namespace Aura.Script
                 throw new Exception($"Unexpected symbol '{ch}'");
             }
         }
-    }
-
-    public class TokenizerException : Exception
-    {
-        public ScriptPos Position { get; }
-        private readonly string message;
-
-        public TokenizerException(ScriptPos position, string msg)
-        {
-            Position = position;
-            message = msg;
-        }
-
-        public override string Message => $"{Position}: {Message}";
     }
 }

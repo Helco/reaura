@@ -17,8 +17,11 @@ namespace Aura.Script
         Semicolon,
         Assign,
         Equals,
+        NotEquals,
         LogicalAnd,
         LogicalOr,
+        Colon,
+        Comma,
 
         EndOfSource
     }
