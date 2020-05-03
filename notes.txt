@@ -1,1 +1,3 @@
 /c/temp/ffmpeg.exe -i 009.bik -frames 1 -vf "shuffleframes='tile=4x2" c:/dev/reaure/Assets/009.png
+
+/c/temp/ffmpeg.exe -i FireKamin.bik -c:v libvpx -pix_fmt yuva420p -metadata:s:v:0 alpha_mode="1" -crf 4 -b:v 1M -auto-alt-ref 0 c:/dev/aura/reaura/Assets/FireKamin.webm
