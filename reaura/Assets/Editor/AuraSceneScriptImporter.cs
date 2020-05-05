@@ -95,6 +95,10 @@ namespace Aura
                 if (!files.TryGetValue(scriptFile, out var scriptContent))
                     throw new InvalidDataException($"Unknown script name {scriptNode.Value} in cell {cellNode.Name}");
 
+                // verify script syntax
+                var tokenizer = new Tokenizer(scriptFile, scriptContent);
+                new CellScriptParser(tokenizer).ParseCellScript();
+
                 var cellGO = Instantiate(prefab);
                 cellGO.name = "Cell " + cellNode.Name;
                 cellGO.transform.parent = parentGO.transform;
