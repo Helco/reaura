@@ -29,14 +29,8 @@ public class AuraSceneScriptImporter : ScriptedImporter
         ctx.AddObjectToAsset(sceneGO.name, sceneGO);
         ctx.SetMainObject(sceneGO);
 
-        ImportGraphicList(ctx, sceneScript.EntityLists["&Fon_Animate"] as GraphicListNode, new Dictionary<string, string>()
-        {
-            { "PlayAVI", nameof(Import_FonAnimate_LoadAVI) }
-        });
-        ImportGraphicList(ctx, sceneScript.EntityLists["&Sprites"] as GraphicListNode, new Dictionary<string, string>()
-        {
-            { "Sprite", nameof(Import_Sprites_Sprite) }
-        });
+        ImportGraphicList(ctx, sceneScript.EntityLists["&Fon_Animate"] as GraphicListNode);
+        ImportGraphicList(ctx, sceneScript.EntityLists["&Sprites"] as GraphicListNode);
     }
 
     private Dictionary<string, string> ReadFiles(AssetImportContext ctx)
@@ -61,107 +55,63 @@ public class AuraSceneScriptImporter : ScriptedImporter
         return files;
     }
 
-    private static IEnumerable<(Type csharp, Type aura, Func<AssetImportContext, ValueNode, object> converter)> ArgumentMappings = new (Type csharp, Type aura, Func<AssetImportContext, ValueNode, object> converter)[]
+    private void ImportGraphicList(AssetImportContext ctx, GraphicListNode graphicList)
     {
-        (csharp: typeof(string), aura: typeof(StringNode), converter: (ctx, v) => (v as StringNode).Value),
-        (csharp: typeof(int), aura: typeof(NumericNode), converter: (ctx, v) => (v as NumericNode).Value),
-        (csharp: typeof(int), aura: typeof(StringNode), converter: (ctx, v) =>
-        {
-            string constantName = (v as StringNode).Value;
-            if (constantName == "TRUE") return 1;
-            if (constantName == "FALSE") return 0;
-            throw new Exception($"No known numeric constant {constantName}");
-        }),
-        (csharp: typeof(CubemapFace), aura: typeof(StringNode), converter: (ctx, v) =>
-        {
-            string constantName = (v as StringNode).Value;
-            if (constantName == "FRONT") return CubemapFace.PositiveZ;
-            if (constantName == "BACKK") return CubemapFace.NegativeZ;
-            if (constantName == "RIGHT") return CubemapFace.PositiveX;
-            if (constantName == "LEFTT") return CubemapFace.NegativeX;
-            if (constantName == "UPPPP") return CubemapFace.PositiveY;
-            if (constantName == "DOWNN") return CubemapFace.NegativeY;
-            throw new Exception($"No known face name {constantName}");
-        }),
-        (csharp: typeof(VideoClip), aura: typeof(StringNode), converter: (AssetImportContext ctx, ValueNode v) =>
-        {
-            string path = (v as StringNode).Value.Replace(".bik", ".webm");
-            if (path.StartsWith(".\\"))
-                path = path.Substring(2);
-            path = Path.Combine(Path.GetDirectoryName(ctx.assetPath), path);
-            var clip = AssetDatabase.LoadAssetAtPath<VideoClip>(path);
-            if (clip == null)
-                throw new Exception($"Could not find video at {path}");
-            return clip;
-        }),
-        (csharp: typeof(Texture2D), aura: typeof(StringNode), converter: (AssetImportContext ctx, ValueNode v) =>
-        {
-            string path = (v as StringNode).Value;
-            if (path.StartsWith(".\\"))
-                path = path.Substring(2);
-            path = Path.Combine(Path.GetDirectoryName(ctx.assetPath), path);
-            var tex = AssetDatabase.LoadAssetAtPath<Texture2D>(path);
-            if (tex == null)
-                throw new Exception($"Could not find texture at {path}");
-            return tex;
-        })
-    };
+        GameObject parentGO = new GameObject(graphicList.Name.Substring(1));
+        parentGO.transform.parent = sceneGO.transform;
+        int currentId = 0;
 
-    private void ImportGraphicList(AssetImportContext ctx, GraphicListNode graphicList, IReadOnlyDictionary<string, string> methodMapping)
-    {
-        new GameObject(graphicList.Name.Substring(1)).transform.parent = sceneGO.transform;
+        var interpreter = new Interpreter();
+        interpreter.RegisterArgumentMapper(typeof(CubemapFace), typeof(StringNode), MapStringToCubemapFace);
+        interpreter.RegisterArgumentMapper(typeof(Texture2D), typeof(StringNode), v => MapStringToTexture(ctx, v));
+        interpreter.RegisterArgumentMapper(typeof(VideoClip), typeof(StringNode), v => MapStringToVideoClip(ctx, v));
+        interpreter.RegisterFunction("Sprite", (Texture2D tex, int posX, int posY, CubemapFace face) => this.ImportSprite(parentGO, currentId, tex, posX, posY, face));
+        interpreter.RegisterFunction("PlayAVI", (VideoClip clip, string unk, int posX, int posY, CubemapFace face) => this.ImportVideoSprite(parentGO, currentId, clip, posX, posY, face));
+
         foreach (var graphic in graphicList.Graphics.Values)
         {
-            var call = graphic.Value;
-            if (!methodMapping.TryGetValue(call.Function, out var csharpMethodName))
-                throw new Exception($"No mapping for AuraScript function {call.Function}");
-
-            var csharpMethod = GetType().GetMethod(csharpMethodName, System.Reflection.BindingFlags.NonPublic | System.Reflection.BindingFlags.Instance);
-            var csharpParams = csharpMethod.GetParameters();
-            if (csharpParams.Length != call.Arguments.Count() + 1)
-                throw new Exception($"Invalid number for AuraScript function {call.Function}");
-            if (csharpParams[0].ParameterType != typeof(int))
-                throw new Exception($"CSharp function for {call.Function} does not have an int parameter for the id");
-
-            object[] args = new object[csharpParams.Length];
-            args[0] = graphic.ID;
-            for (int i = 0; i < call.Arguments.Count(); i++)
-            {
-                var csharpParamType = csharpParams[i + 1].ParameterType;
-                var auraArgument = call.Arguments.ElementAt(i);
-                if (auraArgument == null)
-                {
-                    if (csharpParams[i + 1].CustomAttributes.Any(a => a.AttributeType == typeof(AuraOptionalAttribute)))
-                        args[i + 1] = null;
-                    else
-                        throw new Exception($"Parameter {i + 1} for {call.Function} is not optional");
-                }
-                else
-                {
-                    var mapping = ArgumentMappings.SingleOrDefault(t => t.csharp == csharpParamType && t.aura == auraArgument.GetType());
-                    if (mapping.converter == null)
-                        throw new Exception($"No known mapping between C# {csharpParamType.Name} and Aura {auraArgument.GetType().Name}");
-                    else
-                        args[i + 1] = mapping.converter(ctx, auraArgument);
-                }
-            }
-            csharpMethod.Invoke(this, args);
+            currentId = graphic.ID;
+            interpreter.Execute(graphic.Value);
         }
     }
 
-    private void Import_FonAnimate_LoadAVI(int id, VideoClip clip, [AuraOptional] string path2, int posX, int posY, CubemapFace face)
+    private object MapStringToCubemapFace(ValueNode v)
     {
-        var prefab = AssetDatabase.LoadAssetAtPath<GameObject>("Assets/AuraVideoSprite.prefab");
-        var go = Instantiate(prefab);
-        go.name = $"Video {id} {clip.name}";
-        go.GetComponent<VideoPlayer>().clip = clip;
-        var sprite = go.GetComponent<Aura.AuraSpriteRenderer>();
-        sprite.TexturePos = new Vector2(posX, posY);
-        sprite.Face = face;
-        go.transform.parent = sceneGO.transform.Find("Fon_Animate");
+        string constantName = (v as StringNode).Value;
+        if (constantName == "FRONT") return CubemapFace.PositiveZ;
+        if (constantName == "BACKK") return CubemapFace.NegativeZ;
+        if (constantName == "RIGHT") return CubemapFace.PositiveX;
+        if (constantName == "LEFTT") return CubemapFace.NegativeX;
+        if (constantName == "UPPPP") return CubemapFace.PositiveY;
+        if (constantName == "DOWNN") return CubemapFace.NegativeY;
+        throw new Exception($"No known face name {constantName}");
     }
 
-    private void Import_Sprites_Sprite(int id, Texture2D texture, int posX, int posY, CubemapFace face)
+    private Texture2D MapStringToTexture(AssetImportContext ctx, ValueNode v)
+    {
+        string path = (v as StringNode).Value;
+        if (path.StartsWith(".\\"))
+            path = path.Substring(2);
+        path = Path.Combine(Path.GetDirectoryName(ctx.assetPath), path);
+        var tex = AssetDatabase.LoadAssetAtPath<Texture2D>(path);
+        if (tex == null)
+            throw new Exception($"Could not find texture at {path}");
+        return tex;
+    }
+
+    private VideoClip MapStringToVideoClip(AssetImportContext ctx, ValueNode v)
+    {
+        string path = (v as StringNode).Value.Replace(".bik", ".webm");
+        if (path.StartsWith(".\\"))
+            path = path.Substring(2);
+        path = Path.Combine(Path.GetDirectoryName(ctx.assetPath), path);
+        var clip = AssetDatabase.LoadAssetAtPath<VideoClip>(path);
+        if (clip == null)
+            throw new Exception($"Could not find video at {path}");
+        return clip;
+    }
+
+    private void ImportSprite(GameObject parent, int id, Texture2D texture, int posX, int posY, CubemapFace face)
     {
         var prefab = AssetDatabase.LoadAssetAtPath<GameObject>("Assets/AuraSprite.prefab");
         var go = Instantiate(prefab);
@@ -170,10 +120,18 @@ public class AuraSceneScriptImporter : ScriptedImporter
         sprite.Texture = texture;
         sprite.TexturePos = new Vector2(posX, posY);
         sprite.Face = face;
-        go.transform.parent = sceneGO.transform.Find("Sprites");
+        go.transform.parent = parent.transform;
     }
 
-    private class AuraOptionalAttribute : Attribute
+    private void ImportVideoSprite(GameObject parent, int id, VideoClip clip, int posX, int posY, CubemapFace face)
     {
+        var prefab = AssetDatabase.LoadAssetAtPath<GameObject>("Assets/AuraVideoSprite.prefab");
+        var go = Instantiate(prefab);
+        go.name = $"Video {id} {clip.name}";
+        go.GetComponent<VideoPlayer>().clip = clip;
+        var sprite = go.GetComponent<Aura.AuraSpriteRenderer>();
+        sprite.TexturePos = new Vector2(posX, posY);
+        sprite.Face = face;
+        go.transform.parent = parent.transform;
     }
 }
