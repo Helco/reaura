@@ -16,10 +16,11 @@ namespace Aura
     {
 
         private GameObject sceneGO;
+        private Dictionary<string, string> files;
 
         public override void OnImportAsset(AssetImportContext ctx)
         {
-            var files = ReadFiles(ctx);
+            files = ReadFiles(ctx);
             var sceneName = Path.GetFileNameWithoutExtension(ctx.assetPath);
 
             if (!files.TryGetValue(sceneName + ".scc", out var sceneScriptText))
@@ -72,12 +73,37 @@ namespace Aura
 
         private void ImportCellList(AssetImportContext ctx, CellListNode cellList)
         {
+            void ExpectProperty<T>(CellNode cell, string name, out T value) where T : ValueNode
+            {
+                if (!cell.Properties.TryGetValue(name, out var cellProp))
+                    throw new InvalidDataException($"Expected the cell property {name}");
+                if (!(cellProp.Value is T))
+                    throw new InvalidDataException($"Expected cell property {name} to be {typeof(T).Name}");
+                value = cellProp.Value as T;
+            }
+
+            var prefab = AssetDatabase.LoadAssetAtPath<GameObject>("Assets/AuraCell.prefab");
             GameObject parentGO = new GameObject(cellList.Name.Substring(1));
             parentGO.transform.parent = sceneGO.transform;
 
-            foreach (var cellNode in cellList.Cells)
+            foreach (var cellNode in cellList.Cells.Values)
             {
+                ExpectProperty(cellNode, "Pos", out VectorNode posNode);
+                ExpectProperty(cellNode, "CellSize", out VectorNode sizeNode);
+                ExpectProperty(cellNode, "script", out StringNode scriptNode);
+                var scriptFile = scriptNode.Value.Replace(".\\", "");
+                if (!files.TryGetValue(scriptFile, out var scriptContent))
+                    throw new InvalidDataException($"Unknown script name {scriptNode.Value} in cell {cellNode.Name}");
 
+                var cellGO = Instantiate(prefab);
+                cellGO.name = "Cell " + cellNode.Name;
+                cellGO.transform.parent = parentGO.transform;
+                var cellArea = cellGO.GetComponent<SphericalArea>();
+                cellArea.upperLeft = new Vector2(posNode.X, posNode.Y);
+                cellArea.size = new Vector2(sizeNode.X, sizeNode.Y);
+                var cell = cellGO.GetComponent<AuraCell>();
+                cell.ScriptFile = scriptFile;
+                cell.Script = scriptContent;
             }
         }
 

@@ -38,6 +38,7 @@ namespace Aura
         public float verticalSpeed = 1.0f;
 
         public Vector2 AuraPosition => AuraMath.AngleToAura(euler);
+        public event Action<Vector2> OnClicked = pos => { Debug.Log("Clicked on aura: " + pos); };
 
         private Vector3 euler = Vector3.zero;
 
@@ -54,7 +55,7 @@ namespace Aura
             {
                 var ray = GetComponent<Camera>().ScreenPointToRay(Input.mousePosition);
                 var clickAuraPos = AuraMath.SphereToAura(ray.direction);
-                Debug.Log("Clicked on aura: " + clickAuraPos);
+                OnClicked(clickAuraPos);
             }
 
             bool isMoving = Input.GetMouseButton(1);

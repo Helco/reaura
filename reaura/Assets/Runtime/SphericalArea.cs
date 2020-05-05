@@ -13,9 +13,16 @@ namespace Aura
         public Vector2 upperLeft;
         public Vector2 size;
 
+        public bool IsPointInside(Vector2 auraPos) =>
+            auraPos.x >= upperLeft.x && auraPos.x < upperLeft.x + size.x &&
+            auraPos.y >= upperLeft.y && auraPos.y < upperLeft.y + size.y;
+
 #if UNITY_EDITOR
         private void OnDrawGizmos()
         {
+            if (size == Vector2.zero)
+                return;
+
             void drawSphericalSection(Vector2 auraFrom, Vector2 auraTo)
             {
                 Vector3 from = AuraMath.AuraOnSphere(auraFrom);
@@ -46,6 +53,9 @@ namespace Aura
         private Vector2 gizmoPos, gizmoSize;
         private void OnDrawGizmosSelected()
         {
+            if (size == Vector2.zero)
+                return;
+
             var color = Color.yellow;
             color.a = 0.5f;
             Gizmos.color = color;
