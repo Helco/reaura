@@ -128,8 +128,8 @@ namespace Aura.Script
                         return true;
                     }
 
-                    Current = new Token(TokenType.Identifier, position - tokenStart,
-                        ReadWhile(value, c => char.IsLetterOrDigit(c) || "_.\\".Contains(c)));
+                    value = ReadWhile(value, c => char.IsLetterOrDigit(c) || "_.\\".Contains(c));
+                    Current = new Token(TokenType.Identifier, position - tokenStart, value);
                     return true;
                 }
 

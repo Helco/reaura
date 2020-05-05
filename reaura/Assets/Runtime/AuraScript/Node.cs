@@ -3,14 +3,19 @@ using System.Collections.Generic;
 
 namespace Aura.Script
 {
-    public abstract class Node { }
+    public abstract class Node
+    {
+        public ScriptPos Position { get; }
+
+        public Node(ScriptPos pos) { Position = pos; }
+    }
 
     public class SceneNode : Node
     {
         public IReadOnlyDictionary<string, EntityListNode> EntityLists { get; }
         public IReadOnlyDictionary<string, EventNode> Events { get; }
 
-        public SceneNode(IReadOnlyDictionary<string, EntityListNode> lists, IReadOnlyDictionary<string, EventNode> events)
+        public SceneNode(ScriptPos pos, IReadOnlyDictionary<string, EntityListNode> lists, IReadOnlyDictionary<string, EventNode> events) : base(pos)
         {
             EntityLists = lists;
             Events = events;
@@ -22,7 +27,7 @@ namespace Aura.Script
         public string Name { get; }
         public InstructionBlockNode Action { get; }
 
-        public EventNode(string name, InstructionBlockNode action)
+        public EventNode(ScriptPos pos, string name, InstructionBlockNode action) : base(pos)
         {
             Name = name;
             Action = action;
@@ -33,7 +38,7 @@ namespace Aura.Script
     {
         public string Name { get; }
 
-        public EntityListNode(string name)
+        public EntityListNode(ScriptPos pos, string name) : base(pos)
         {
             Name = name;
         }
@@ -43,7 +48,7 @@ namespace Aura.Script
     {
         public IReadOnlyDictionary<int, GraphicNode> Graphics { get; }
 
-        public GraphicListNode(string name, IReadOnlyDictionary<int, GraphicNode> graphics) : base(name)
+        public GraphicListNode(ScriptPos pos, string name, IReadOnlyDictionary<int, GraphicNode> graphics) : base(pos, name)
         {
             Graphics = graphics;
         }
@@ -53,7 +58,7 @@ namespace Aura.Script
     {
         public IReadOnlyDictionary<string, CellNode> Cells { get; }
 
-        public CellListNode(string name, IReadOnlyDictionary<string, CellNode> cells) : base(name)
+        public CellListNode(ScriptPos pos, string name, IReadOnlyDictionary<string, CellNode> cells) : base(pos, name)
         {
             Cells = cells;
         }
@@ -64,7 +69,7 @@ namespace Aura.Script
         public int ID { get; }
         public FunctionCallNode Value { get; }
 
-        public GraphicNode(int id, FunctionCallNode value)
+        public GraphicNode(ScriptPos pos, int id, FunctionCallNode value) : base(pos)
         {
             ID = id;
             Value = value;
@@ -76,7 +81,7 @@ namespace Aura.Script
         public string Name { get; }
         public IReadOnlyDictionary<string, CellPropertyNode> Properties { get; }
 
-        public CellNode(string name, IReadOnlyDictionary<string, CellPropertyNode> props)
+        public CellNode(ScriptPos pos, string name, IReadOnlyDictionary<string, CellPropertyNode> props) : base(pos)
         {
             Name = name;
             Properties = props;
@@ -88,7 +93,7 @@ namespace Aura.Script
         public string Name { get; }
         public ValueNode Value { get; }
 
-        public CellPropertyNode(string name, ValueNode value)
+        public CellPropertyNode(ScriptPos pos, string name, ValueNode value) : base(pos)
         {
             Name = name;
             Value = value;
@@ -99,22 +104,28 @@ namespace Aura.Script
     {
         public IEnumerable<InstructionNode> Instructions { get; }
 
-        public InstructionBlockNode(IEnumerable<InstructionNode> instructions)
+        public InstructionBlockNode(ScriptPos pos, IEnumerable<InstructionNode> instructions) : base(pos)
         {
             Instructions = instructions;
         }
     }
 
-    public abstract class InstructionNode : Node { }
+    public abstract class InstructionNode : Node
+    {
+        public InstructionNode(ScriptPos pos) : base(pos) { }
+    }
 
-    public class ReturnNode : InstructionNode { }
+    public class ReturnNode : InstructionNode
+    {
+        public ReturnNode(ScriptPos pos) : base(pos) { }
+    }
 
     public class AssignmentNode : InstructionNode
     {
         public VariableNode Target { get; }
         public ValueNode Value { get; }
 
-        public AssignmentNode(VariableNode target, ValueNode value)
+        public AssignmentNode(ScriptPos pos, VariableNode target, ValueNode value) : base(pos)
         {
             Target = target;
             Value = value;
@@ -126,7 +137,7 @@ namespace Aura.Script
         public string Function { get; }
         public IEnumerable<ValueNode> Arguments { get; }
 
-        public FunctionCallNode(string function, IEnumerable<ValueNode> args)
+        public FunctionCallNode(ScriptPos pos, string function, IEnumerable<ValueNode> args) : base(pos)
         {
             Function = function;
             Arguments = args;
@@ -139,7 +150,7 @@ namespace Aura.Script
         public InstructionBlockNode Then { get; }
         public InstructionBlockNode Else { get; }
 
-        public IfNode(ConditionNode condition, InstructionBlockNode thenBlock, InstructionBlockNode elseBlock)
+        public IfNode(ScriptPos pos, ConditionNode condition, InstructionBlockNode thenBlock, InstructionBlockNode elseBlock) : base(pos)
         {
             Condition = condition;
             Then = thenBlock;
@@ -159,7 +170,10 @@ namespace Aura.Script
         Or
     }
 
-    public abstract class ConditionNode : Node { }
+    public abstract class ConditionNode : Node
+    {
+        public ConditionNode(ScriptPos pos) : base(pos) { }
+    }
 
     public class ComparisonNode : ConditionNode
     {
@@ -167,7 +181,7 @@ namespace Aura.Script
         public ValueNode Right { get; }
         public ComparisonOp Op { get; }
 
-        public ComparisonNode(ValueNode left, ValueNode right, ComparisonOp op)
+        public ComparisonNode(ScriptPos pos, ValueNode left, ValueNode right, ComparisonOp op) : base(pos)
         {
             Left = left;
             Right = right;
@@ -181,7 +195,7 @@ namespace Aura.Script
         public ConditionNode Right { get; }
         public LogicalOp Op { get; }
 
-        public LogicalNode(ConditionNode left, ConditionNode right, LogicalOp op)
+        public LogicalNode(ScriptPos pos, ConditionNode left, ConditionNode right, LogicalOp op) : base(pos)
         {
             Left = left;
             Right = right;
@@ -189,14 +203,17 @@ namespace Aura.Script
         }
     }
 
-    public abstract class ValueNode : Node {}
+    public abstract class ValueNode : Node
+    {
+        public ValueNode(ScriptPos pos) : base(pos) { }
+    }
 
     public class VariableNode : ValueNode
     {
         public string Set { get; }
         public string Name { get; }
 
-        public VariableNode(string set, string name)
+        public VariableNode(ScriptPos pos, string set, string name) : base(pos)
         {
             Name = name;
         }
@@ -206,7 +223,7 @@ namespace Aura.Script
     {
         public int Value { get; }
 
-        public NumericNode(int value)
+        public NumericNode(ScriptPos pos, int value) : base(pos)
         {
             Value = value;
         }
@@ -217,7 +234,7 @@ namespace Aura.Script
         public int X { get; }
         public int Y { get; }
 
-        public VectorNode(int x, int y)
+        public VectorNode(ScriptPos pos, int x, int y) : base(pos)
         {
             X = x;
             Y = y;
@@ -228,7 +245,7 @@ namespace Aura.Script
     {
         public string Value { get; }
 
-        public StringNode(string value)
+        public StringNode(ScriptPos pos, string value) : base(pos)
         {
             Value = value;
         }

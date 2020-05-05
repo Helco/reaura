@@ -51,6 +51,9 @@ namespace Aura.Script
             return token.Value;
         }
 
+        protected ScriptPos CalcPos(Token first) => CalcPos(first.Pos);
+        protected ScriptPos CalcPos(ScriptPos first) => Peek().Pos - first;
+
         protected IEnumerable<T> ParseBlockList<T>(TokenType firstToken, Func<T> parse)
         {
             Expect(TokenType.BlockBracketOpen);
@@ -67,40 +70,40 @@ namespace Aura.Script
         }
 
         private static readonly Regex VariableRegex = new Regex(@"^(\w+)\.(\w+)$");
-        protected bool TryParseVariable(string identifier, out VariableNode variable)
+        protected bool TryParseVariable(Token identifier, out VariableNode variable)
         {
             variable = null;
-            var match = VariableRegex.Match(identifier);
+            var match = VariableRegex.Match(identifier.Value);
             if (!match.Success)
                 return false;
-            variable = new VariableNode(match.Groups[1].Value, match.Groups[2].Value);
+            variable = new VariableNode(CalcPos(identifier), match.Groups[1].Value, match.Groups[2].Value);
             return true;
         }
 
         protected VectorNode ParseVector()
         {
-            Expect(TokenType.TupleBracketOpen);
+            var bracketOpen = Expect(TokenType.TupleBracketOpen);
             var x = Expect(TokenType.Integer);
             Expect(TokenType.Comma);
             var y = Expect(TokenType.Integer);
             Expect(TokenType.TupleBracketClose);
-            return new VectorNode(int.Parse(x.Value), int.Parse(y.Value));
+            return new VectorNode(CalcPos(bracketOpen), int.Parse(x.Value), int.Parse(y.Value));
         }
 
         protected ValueNode ParseValue()
         {
             var token = Expect(TokenType.Identifier, TokenType.Integer, TokenType.TupleBracketOpen);
             if (token.Type == TokenType.Integer)
-                return new NumericNode(int.Parse(token.Value));
+                return new NumericNode(CalcPos(token), int.Parse(token.Value));
             else if (token.Type == TokenType.TupleBracketOpen)
             {
                 PushBack(token);
                 return ParseVector();
             }
-            else if (TryParseVariable(token.Value, out var variable))
+            else if (TryParseVariable(token, out var variable))
                 return variable;
             else
-                return new StringNode(token.Value);
+                return new StringNode(CalcPos(token), token.Value);
         }
 
         protected ComparisonOp ParseComparisonOp()
@@ -111,12 +114,12 @@ namespace Aura.Script
 
         protected ComparisonNode ParseComparison()
         {
-            Expect(TokenType.ExprBracketOpen);
+            var bracketOpen = Expect(TokenType.ExprBracketOpen);
             var left = ParseValue();
             var op = ParseComparisonOp();
             var right = ParseValue();
             Expect(TokenType.ExprBracketClose);
-            return new ComparisonNode(left, right, op);
+            return new ComparisonNode(CalcPos(bracketOpen), left, right, op);
         }
 
         protected LogicalOp ParseLogicalOp()
@@ -127,11 +130,11 @@ namespace Aura.Script
 
         protected LogicalNode ParseLogical()
         {
-            Expect(TokenType.ExprBracketOpen);
+            var bracketOpen = Expect(TokenType.ExprBracketOpen);
             var left = ParseCondition();
             var op = ParseLogicalOp();
             var right = ParseCondition();
-            var logical = new LogicalNode(left, right, op);
+            var logical = new LogicalNode(CalcPos(bracketOpen), left, right, op);
 
             while(true)
             {
@@ -142,7 +145,7 @@ namespace Aura.Script
                 PushBack(token);
                 op = ParseLogicalOp();
                 right = ParseCondition();
-                logical = new LogicalNode(logical, right, op);
+                logical = new LogicalNode(CalcPos(bracketOpen), logical, right, op);
             }
         }
 
@@ -185,44 +188,44 @@ namespace Aura.Script
                 }
             }
             Expect(TokenType.Semicolon);
-            return new FunctionCallNode(function.Value, args);
+            return new FunctionCallNode(CalcPos(function), function.Value, args);
         }
 
         protected AssignmentNode ParseAssignment()
         {
             var variableIdentifier = Expect(TokenType.Identifier);
-            if (!TryParseVariable(variableIdentifier.Value, out var variable))
+            if (!TryParseVariable(variableIdentifier, out var variable))
                 throw new Exception($"{variableIdentifier.Pos}: Expected a variable");
             Expect(TokenType.Assign);
             var value = ParseValue();
             Expect(TokenType.Semicolon);
-            return new AssignmentNode(variable, value);
+            return new AssignmentNode(CalcPos(variableIdentifier), variable, value);
         }
 
         protected IfNode ParseIf()
         {
-            Expect(TokenType.Identifier);
+            var ifKeyword = Expect(TokenType.Identifier);
             var condition = ParseCondition();
             var thenBlock = ParseInstructionBlock();
 
             var elseToken = ContinueWith(TokenType.Identifier);
             if (!elseToken.HasValue)
-                return new IfNode(condition, thenBlock, null);
+                return new IfNode(CalcPos(ifKeyword), condition, thenBlock, null);
             else if (elseToken.Value.Value != "else")
             {
                 PushBack(elseToken.Value);
-                return new IfNode(condition, thenBlock, null);
+                return new IfNode(CalcPos(ifKeyword), condition, thenBlock, null);
             }
 
             var elseBlock = ParseInstructionBlock();
-            return new IfNode(condition, thenBlock, elseBlock);
+            return new IfNode(CalcPos(ifKeyword), condition, thenBlock, elseBlock);
         }
 
         protected ReturnNode ParseReturn()
         {
-            Expect(TokenType.Identifier);
+            var returnKeyword = Expect(TokenType.Identifier);
             Expect(TokenType.Semicolon);
-            return new ReturnNode();
+            return new ReturnNode(CalcPos(returnKeyword));
         }
 
         protected InstructionNode ParseInstruction()
@@ -245,8 +248,9 @@ namespace Aura.Script
 
         protected InstructionBlockNode ParseInstructionBlock()
         {
+            var bracketOpen = Peek();
             var list = ParseBlockList(TokenType.Identifier, ParseInstruction);
-            return new InstructionBlockNode(list);
+            return new InstructionBlockNode(CalcPos(bracketOpen), list);
         }
     }
 }

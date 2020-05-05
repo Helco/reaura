@@ -19,7 +19,7 @@ namespace Aura.Script
             Length = length;
         }
 
-        public ScriptPos(ScriptPos from, ScriptPos to)
+        public ScriptPos(ScriptPos to, ScriptPos from)
         {
             if (from.File != to.File)
                 throw new InvalidProgramException("Comparing ScriptPos from different files");

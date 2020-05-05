@@ -14,7 +14,7 @@ namespace Aura.Script
             Expect(TokenType.Assign);
             var value = ParseValue();
             Expect(TokenType.Semicolon);
-            return new CellPropertyNode(name.Value, value);
+            return new CellPropertyNode(CalcPos(name), name.Value, value);
         }
 
         private CellNode ParseCell()
@@ -22,28 +22,28 @@ namespace Aura.Script
             var name = Expect(TokenType.Identifier);
             Expect(TokenType.Colon);
             var properties = ParseBlockList(TokenType.Identifier, ParseCellProperty);
-            return new CellNode(name.Value, properties.ToDictionary(p => p.Name, p => p));
+            return new CellNode(CalcPos(name), name.Value, properties.ToDictionary(p => p.Name, p => p));
         }
 
         private CellListNode ParseCellList()
         {
             var name = Expect(TokenType.Identifier);
             var cells = ParseBlockList(TokenType.Identifier, ParseCell);
-            return new CellListNode(name.Value, cells.ToDictionary(c => c.Name, c => c));
+            return new CellListNode(CalcPos(name), name.Value, cells.ToDictionary(c => c.Name, c => c));
         }
 
         private GraphicNode ParseGraphic()
         {
             var id = Expect(TokenType.Integer);
             Expect(TokenType.Assign);
-            return new GraphicNode(int.Parse(id.Value), ParseFunctionCall());
+            return new GraphicNode(CalcPos(id), int.Parse(id.Value), ParseFunctionCall());
         }
 
         private GraphicListNode ParseGraphicList()
         {
             var name = Expect(TokenType.Identifier);
             var graphics = ParseBlockList(TokenType.Integer, ParseGraphic);
-            return new GraphicListNode(name.Value, graphics.ToDictionary(g => g.ID, g => g));
+            return new GraphicListNode(CalcPos(name), name.Value, graphics.ToDictionary(g => g.ID, g => g));
         }
 
         private EntityListNode ParseEntityList()
@@ -62,18 +62,20 @@ namespace Aura.Script
         {
             var name = Expect(TokenType.Identifier);
             var action = ParseInstructionBlock();
-            return new EventNode(name.Value, action);
+            return new EventNode(CalcPos(name), name.Value, action);
         }
 
         public SceneNode ParseSceneScript()
         {
             var entityLists = new List<EntityListNode>();
             var events = new List<EventNode>();
+            var firstToken = Peek();
             while (true)
             {
                 var token = Expect(TokenType.Identifier, TokenType.EndOfSource);
                 if (token.Type == TokenType.EndOfSource)
                     return new SceneNode(
+                        CalcPos(firstToken),
                         entityLists.ToDictionary(l => l.Name, l => l),
                         events.ToDictionary(l => l.Name, l => l));
 
