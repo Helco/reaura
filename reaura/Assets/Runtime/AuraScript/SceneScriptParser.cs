@@ -8,30 +8,6 @@ namespace Aura.Script
     {
         public SceneScriptParser(Tokenizer tokenizer) : base(tokenizer) { }
 
-        private CellPropertyNode ParseCellProperty()
-        {
-            var name = Expect(TokenType.Identifier);
-            Expect(TokenType.Assign);
-            var value = ParseValue();
-            Expect(TokenType.Semicolon);
-            return new CellPropertyNode(CalcPos(name), name.Value, value);
-        }
-
-        private ObjectNode ParseCell()
-        {
-            var name = Expect(TokenType.Identifier);
-            Expect(TokenType.Colon);
-            var properties = ParseBlockList(TokenType.Identifier, ParseCellProperty);
-            return new ObjectNode(CalcPos(name), name.Value, properties.ToDictionary(p => p.Name, p => p));
-        }
-
-        private ObjectListNode ParseCellList()
-        {
-            var name = Expect(TokenType.Identifier);
-            var cells = ParseBlockList(TokenType.Identifier, ParseCell);
-            return new ObjectListNode(CalcPos(name), name.Value, cells.ToDictionary(c => c.Name, c => c));
-        }
-
         private GraphicNode ParseGraphic()
         {
             var id = Expect(TokenType.Integer);
@@ -53,7 +29,7 @@ namespace Aura.Script
             var key = Expect(TokenType.Identifier, TokenType.Integer, TokenType.BlockBracketClose);
             PushBack(key, bracket, name);
             if (key.Type == TokenType.Identifier)
-                return ParseCellList();
+                return ParseObjectList();
             else // treat empty entity lists as graphic lists, empty cell lists will be too rare to care about
                 return ParseGraphicList();
         }

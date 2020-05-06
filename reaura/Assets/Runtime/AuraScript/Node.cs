@@ -91,21 +91,21 @@ namespace Aura.Script
     public class ObjectNode : Node
     {
         public string Name { get; }
-        public IReadOnlyDictionary<string, CellPropertyNode> Properties { get; }
+        public IReadOnlyDictionary<string, PropertyNode> Properties { get; }
 
-        public ObjectNode(ScriptPos pos, string name, IReadOnlyDictionary<string, CellPropertyNode> props) : base(pos)
+        public ObjectNode(ScriptPos pos, string name, IReadOnlyDictionary<string, PropertyNode> props) : base(pos)
         {
             Name = name;
             Properties = props;
         }
     }
 
-    public class CellPropertyNode : Node
+    public class PropertyNode : Node
     {
         public string Name { get; }
         public ValueNode Value { get; }
 
-        public CellPropertyNode(ScriptPos pos, string name, ValueNode value) : base(pos)
+        public PropertyNode(ScriptPos pos, string name, ValueNode value) : base(pos)
         {
             Name = name;
             Value = value;

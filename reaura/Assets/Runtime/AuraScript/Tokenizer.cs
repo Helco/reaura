@@ -19,10 +19,11 @@ namespace Aura.Script
             this.text = text;
         }
 
-        public IEnumerator<Token> GetEnumerator() => new TokenizerEnumerator(this);
+        public TokenizerEnumerator GetEnumerator() => new TokenizerEnumerator(this);
+        IEnumerator<Token> IEnumerable<Token>.GetEnumerator() => GetEnumerator();
         IEnumerator IEnumerable.GetEnumerator() => GetEnumerator();
 
-        private class TokenizerEnumerator : IEnumerator<Token>, IEnumerator
+        public class TokenizerEnumerator : IEnumerator<Token>, IEnumerator
         {
             private static readonly IReadOnlyDictionary<char, TokenType> SingleCharTokens = new Dictionary<char, TokenType>()
             {
@@ -42,7 +43,7 @@ namespace Aura.Script
             private ScriptPos position;
             private bool didSendEoS;
 
-            public TokenizerEnumerator(Tokenizer source)
+            internal TokenizerEnumerator(Tokenizer source)
             {
                 this.source = source;
                 Reset();
@@ -92,7 +93,7 @@ namespace Aura.Script
                 }
             }
 
-            private string ReadWhile(string prefix, Predicate<char> isValid)
+            public string ReadWhile(string prefix, Predicate<char> isValid)
             {
                 string value = prefix;
                 int chI = Peek();
@@ -129,6 +130,17 @@ namespace Aura.Script
                     }
 
                     value = ReadWhile(value, c => char.IsLetterOrDigit(c) || "_.\\".Contains(c));
+                    Current = new Token(TokenType.Identifier, position - tokenStart, value);
+                    return true;
+                }
+
+                if (ch == '\"')
+                {
+                    Read();
+                    string value = ReadWhile("", c => !char.IsControl(c) && c != '\"');
+                    if (Peek() != '\"')
+                        throw new Exception($"Unexpected symbol '{(char)Peek()}', expected '\"'");
+                    Read();
                     Current = new Token(TokenType.Identifier, position - tokenStart, value);
                     return true;
                 }

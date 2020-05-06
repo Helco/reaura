@@ -252,5 +252,29 @@ namespace Aura.Script
             var list = ParseBlockList(TokenType.Identifier, ParseInstruction);
             return new InstructionBlockNode(CalcPos(bracketOpen), list);
         }
+
+        protected PropertyNode ParseProperty()
+        {
+            var name = Expect(TokenType.Identifier);
+            Expect(TokenType.Assign);
+            var value = ParseValue();
+            Expect(TokenType.Semicolon);
+            return new PropertyNode(CalcPos(name), name.Value, value);
+        }
+
+        protected ObjectNode ParseObject()
+        {
+            var name = Expect(TokenType.Identifier);
+            ContinueWith(TokenType.Colon); // it is optional in Predmets.prd
+            var properties = ParseBlockList(TokenType.Identifier, ParseProperty);
+            return new ObjectNode(CalcPos(name), name.Value, properties.ToDictionary(p => p.Name, p => p));
+        }
+
+        protected ObjectListNode ParseObjectList()
+        {
+            var name = Expect(TokenType.Identifier);
+            var cells = ParseBlockList(TokenType.Identifier, ParseObject);
+            return new ObjectListNode(CalcPos(name), name.Value, cells.ToDictionary(c => c.Name, c => c));
+        }
     }
 }
