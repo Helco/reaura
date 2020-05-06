@@ -43,8 +43,8 @@ namespace Aura
             var cellLists = sceneScript
                 .EntityLists
                 .Values
-                .Where(l => l is CellListNode)
-                .Cast<CellListNode>();
+                .Where(l => l is ObjectListNode)
+                .Cast<ObjectListNode>();
             foreach (var cellList in cellLists)
                 ImportCellList(ctx, cellList);
         }
@@ -71,9 +71,9 @@ namespace Aura
             return files;
         }
 
-        private void ImportCellList(AssetImportContext ctx, CellListNode cellList)
+        private void ImportCellList(AssetImportContext ctx, ObjectListNode cellList)
         {
-            void ExpectProperty<T>(CellNode cell, string name, out T value) where T : ValueNode
+            void ExpectProperty<T>(ObjectNode cell, string name, out T value) where T : ValueNode
             {
                 if (!cell.Properties.TryGetValue(name, out var cellProp))
                     throw new InvalidDataException($"Expected the cell property {name}");
@@ -86,7 +86,7 @@ namespace Aura
             GameObject parentGO = new GameObject(cellList.Name.Substring(1));
             parentGO.transform.parent = sceneGO.transform;
 
-            foreach (var cellNode in cellList.Cells.Values)
+            foreach (var cellNode in cellList.Objects.Values)
             {
                 ExpectProperty(cellNode, "Pos", out VectorNode posNode);
                 ExpectProperty(cellNode, "CellSize", out VectorNode sizeNode);
@@ -118,7 +118,7 @@ namespace Aura
             int currentId = 0;
 
             var interpreter = new Interpreter();
-            interpreter.RegisterArgumentMapper(typeof(CubemapFace), typeof(StringNode), MapStringToCubemapFace);
+            interpreter.RegisterArgumentMapper(typeof(CubemapFace), typeof(StringNode), v => MapStringToCubemapFace(v));
             interpreter.RegisterArgumentMapper(typeof(Texture2D), typeof(StringNode), v => MapStringToTexture(ctx, v));
             interpreter.RegisterArgumentMapper(typeof(VideoClip), typeof(StringNode), v => MapStringToVideoClip(ctx, v));
             interpreter.RegisterFunction("Sprite", (Texture2D tex, int posX, int posY, CubemapFace face) => ImportSprite(parentGO, currentId, tex, posX, posY, face));
@@ -131,7 +131,7 @@ namespace Aura
             }
         }
 
-        private object MapStringToCubemapFace(ValueNode v)
+        public static CubemapFace MapStringToCubemapFace(ValueNode v)
         {
             string constantName = (v as StringNode).Value;
             if (constantName == "FRONT") return CubemapFace.PositiveZ;

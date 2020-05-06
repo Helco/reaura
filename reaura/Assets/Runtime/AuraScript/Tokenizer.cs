@@ -118,7 +118,7 @@ namespace Aura.Script
                 char ch = (char)chI;
 
                 ScriptPos tokenStart = position;
-                if (char.IsLetter(ch) || "_.\\$@&".Contains(ch))
+                if (char.IsLetter(ch) || "_.\\$@&%".Contains(ch))
                 {
                     string value = "" + (char)Read();
                     if (ch == '&' && Peek() == '&')

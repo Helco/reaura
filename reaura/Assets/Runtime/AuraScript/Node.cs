@@ -10,6 +10,18 @@ namespace Aura.Script
         public Node(ScriptPos pos) { Position = pos; }
     }
 
+    public class DefaultValueNode : Node
+    {
+        public string Name { get; }
+        public ValueNode Value { get; }
+
+        public DefaultValueNode(ScriptPos pos, string target, ValueNode value) : base(pos)
+        {
+            Name = target;
+            Value = value;
+        }
+    }
+
     public class SceneNode : Node
     {
         public IReadOnlyDictionary<string, EntityListNode> EntityLists { get; }
@@ -54,13 +66,13 @@ namespace Aura.Script
         }
     }
 
-    public class CellListNode : EntityListNode
+    public class ObjectListNode : EntityListNode
     {
-        public IReadOnlyDictionary<string, CellNode> Cells { get; }
+        public IReadOnlyDictionary<string, ObjectNode> Objects { get; }
 
-        public CellListNode(ScriptPos pos, string name, IReadOnlyDictionary<string, CellNode> cells) : base(pos, name)
+        public ObjectListNode(ScriptPos pos, string name, IReadOnlyDictionary<string, ObjectNode> cells) : base(pos, name)
         {
-            Cells = cells;
+            Objects = cells;
         }
     }
 
@@ -76,12 +88,12 @@ namespace Aura.Script
         }
     }
 
-    public class CellNode : Node
+    public class ObjectNode : Node
     {
         public string Name { get; }
         public IReadOnlyDictionary<string, CellPropertyNode> Properties { get; }
 
-        public CellNode(ScriptPos pos, string name, IReadOnlyDictionary<string, CellPropertyNode> props) : base(pos)
+        public ObjectNode(ScriptPos pos, string name, IReadOnlyDictionary<string, CellPropertyNode> props) : base(pos)
         {
             Name = name;
             Properties = props;

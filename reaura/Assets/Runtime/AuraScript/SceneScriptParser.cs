@@ -17,19 +17,19 @@ namespace Aura.Script
             return new CellPropertyNode(CalcPos(name), name.Value, value);
         }
 
-        private CellNode ParseCell()
+        private ObjectNode ParseCell()
         {
             var name = Expect(TokenType.Identifier);
             Expect(TokenType.Colon);
             var properties = ParseBlockList(TokenType.Identifier, ParseCellProperty);
-            return new CellNode(CalcPos(name), name.Value, properties.ToDictionary(p => p.Name, p => p));
+            return new ObjectNode(CalcPos(name), name.Value, properties.ToDictionary(p => p.Name, p => p));
         }
 
-        private CellListNode ParseCellList()
+        private ObjectListNode ParseCellList()
         {
             var name = Expect(TokenType.Identifier);
             var cells = ParseBlockList(TokenType.Identifier, ParseCell);
-            return new CellListNode(CalcPos(name), name.Value, cells.ToDictionary(c => c.Name, c => c));
+            return new ObjectListNode(CalcPos(name), name.Value, cells.ToDictionary(c => c.Name, c => c));
         }
 
         private GraphicNode ParseGraphic()
