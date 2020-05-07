@@ -12,6 +12,7 @@ namespace Aura
         private AuraSOSceneSet sceneSet = null;
 
         public AuraScene CurrentScene { get; private set; } = null;
+        public event Action<AuraScene> OnLoadedScene = _ => { };
 
         private void Awake()
         {
@@ -39,6 +40,7 @@ namespace Aura
             if (CurrentScene != null)
                 Destroy(CurrentScene);
             CurrentScene = Instantiate(sceneToLoadAtStart);
+            OnLoadedScene.Invoke(CurrentScene);
         }
 
         public void LoadScene(string sceneName)

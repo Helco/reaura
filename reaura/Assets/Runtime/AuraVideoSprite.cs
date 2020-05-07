@@ -30,15 +30,35 @@ namespace Aura
             spriteRenderer.Texture = renderTexture;
         }
 
-        private void Start()
-        {
-            videoPlayer.Play();
-        }
-
         private void Update()
         {
             if (videoPlayer.isPlaying)
                 spriteRenderer.IsDirty = true;
+        }
+
+        public void Play()
+        {
+            spriteRenderer.enabled = true;
+            videoPlayer.Stop();
+            videoPlayer.Play();
+        }
+
+        public void Suspend()
+        {
+            videoPlayer.Pause();
+            spriteRenderer.enabled = false;
+        }
+
+        public void Resume()
+        {
+            spriteRenderer.enabled = true;
+            videoPlayer.Play();
+        }
+
+        public void Stop()
+        {
+            videoPlayer.Stop();
+            spriteRenderer.enabled = false;
         }
     }
 }

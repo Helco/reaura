@@ -62,6 +62,7 @@ namespace Aura
             worldRenderer = FindObjectOfType<AuraWorldRenderer>();
             if (worldRenderer == null)
                 throw new MissingReferenceException("AuraSprite cannot find the world renderer");
+            enabled = false;
         }
 
         private void OnEnable()
