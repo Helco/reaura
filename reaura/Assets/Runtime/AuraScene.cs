@@ -44,7 +44,16 @@ namespace Aura
         public InstructionBlockNode CompiledOnLoadSceneScript { get; private set; } = null;
         public InstructionBlockNode CompiledOnLoadFirstCubeFaceScript { get; private set; } = null;
 
-        private void Awake() => ParseScripts();
+        private AuraScriptExecution scriptExecution;
+
+        private void Awake()
+        {
+            scriptExecution = FindObjectOfType<AuraScriptExecution>();
+            if (scriptExecution == null)
+                throw new MissingComponentException("AuraScene cannot find the script execution object");
+
+            ParseScripts();
+        }
 
         private void ParseScripts()
         {
@@ -53,6 +62,11 @@ namespace Aura
 
             tokenizer = new Tokenizer(SceneName, onLoadFirstCubeFaceScript);
             CompiledOnLoadFirstCubeFaceScript = new CellScriptParser(tokenizer).ParseCellScript();
+        }
+
+        private void Start()
+        {
+            scriptExecution.Interpreter.Execute(CompiledOnLoadSceneScript);
         }
     }
 }

@@ -50,12 +50,22 @@ namespace Aura
         }
 
         private SphericalArea area;
+        private MouseCameraInput mouseInput;
+        private AuraScriptExecution scriptExecution;
 
         private void Awake()
         {
             area = GetComponent<SphericalArea>();
             if (area == null)
                 throw new MissingComponentException("AuraCell is missing a SphericalArea component");
+            mouseInput = FindObjectOfType<MouseCameraInput>();
+            if (mouseInput == null)
+                throw new MissingComponentException("AuraCell cannot find the mouse camera input object");
+            scriptExecution = FindObjectOfType<AuraScriptExecution>();
+            if (scriptExecution == null)
+                throw new MissingComponentException("AuraCell cannot find the script execution object");
+
+            mouseInput.OnClicked += OnClicked;
             ParseScript();
         }
 
@@ -63,6 +73,13 @@ namespace Aura
         {
             var tokenizer = new Tokenizer(ScriptFile, Script);
             CompiledScript = new CellScriptParser(tokenizer).ParseCellScript();
+        }
+
+        private void OnClicked(Vector2 pos)
+        {
+            if (!area.IsPointInside(pos))
+                return;
+            scriptExecution.Interpreter.Execute(CompiledScript);
         }
     }
 }
