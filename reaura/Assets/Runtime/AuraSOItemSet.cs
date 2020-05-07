@@ -4,7 +4,7 @@ using UnityEngine;
 
 namespace Aura
 {
-    public class AuraSOItemList : ScriptableObject
+    public class AuraSOItemSet : ScriptableObject
     {
         [SerializeField]
         private AuraSOItem[] items;

@@ -12,7 +12,7 @@ using UnityEngine.Video;
 namespace Aura
 {
     [ScriptedImporter(1, "prd")]
-    public class AuraItemListImporter : ScriptedImporter
+    public class AuraItemSetImporter : ScriptedImporter
     {
         private Regex NameRegex = new Regex(@"^&\w+$");
         private Regex DescriptionRegex = new Regex(@"Description=(.+?);");
@@ -30,7 +30,7 @@ namespace Aura
             foreach (var objectNode in objects)
                 items.Add(ImportItem(ctx, objectNode));
 
-            var list = ScriptableObject.CreateInstance<AuraSOItemList>();
+            var list = ScriptableObject.CreateInstance<AuraSOItemSet>();
             list.Items = items;
             list.name = itemListName;
             ctx.AddObjectToAsset(list.name, list);
