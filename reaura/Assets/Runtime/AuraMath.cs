@@ -6,6 +6,19 @@ namespace Aura
     {
         public static readonly Vector2 MaxAuraAngle = new Vector2(960.0f, 720.0f);
 
+        public static Vector2 NormalizeAura(Vector2 pos)
+        {
+            while (pos.x < 0.0f)
+                pos.x += MaxAuraAngle.x;
+            while (pos.x >= MaxAuraAngle.x)
+                pos.x -= MaxAuraAngle.x;
+            while (pos.y < 0.0f)
+                pos.y += MaxAuraAngle.y;
+            while (pos.y >= MaxAuraAngle.y)
+                pos.y -= MaxAuraAngle.y;
+            return pos;
+        }
+
         public static Vector2 AngleToAura(Vector2 unityAngle) => new Vector2(
             unityAngle.y / 360.0f * MaxAuraAngle.x,
             (unityAngle.x + 90.0f) / 180.0f * MaxAuraAngle.y);

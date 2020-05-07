@@ -12,10 +12,22 @@ namespace Aura
 
         public Vector2 upperLeft;
         public Vector2 size;
+        public Vector2 LowerRight => AuraMath.NormalizeAura(upperLeft + size);
 
-        public bool IsPointInside(Vector2 auraPos) =>
-            auraPos.x >= upperLeft.x && auraPos.x < upperLeft.x + size.x &&
-            auraPos.y >= upperLeft.y && auraPos.y < upperLeft.y + size.y;
+        public bool IsPointInside(Vector2 auraPos)
+        {
+            bool wrappedIntervalInside(float val, float min, float max)
+            {
+                if (min < max)
+                    return val >= min && val <= max;
+                else
+                    return val >= min || val <= max;
+            }
+            auraPos = AuraMath.NormalizeAura(auraPos);
+            return
+                wrappedIntervalInside(auraPos.x, upperLeft.x, LowerRight.x) &&
+                wrappedIntervalInside(auraPos.y, upperLeft.y, LowerRight.y);
+        }
 
 #if UNITY_EDITOR
         private void OnDrawGizmos()
