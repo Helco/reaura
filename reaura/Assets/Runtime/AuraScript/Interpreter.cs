@@ -74,7 +74,7 @@ namespace Aura.Script
         {
             if (valueNode is NumericNode) return Evaluate(valueNode as NumericNode);
             if (valueNode is VariableNode) return Evaluate(valueNode as VariableNode);
-            if (valueNode is StringNode) throw new InvalidDataException("Strings cannot be evaluated");
+            if (valueNode is StringNode) return Evaluate(valueNode as StringNode);
             if (valueNode is VectorNode) throw new InvalidDataException("Vectors cannot be evaluated");
             throw new InvalidProgramException("Unknown value node");
         }
@@ -86,6 +86,13 @@ namespace Aura.Script
             if (!variableSets.TryGetValue(variable.Set, out var variableSet))
                 throw new InvalidDataException($"Unknown variable set {variable.Set}");
             return variableSet[variable.Name];
+        }
+
+        public int Evaluate(StringNode str)
+        {
+            if (!Constants.TryGetValue(str.Value, out int value))
+                throw new InvalidDataException($"Unknown constant {str.Value}");
+            return value;
         }
 
         public void Execute(InstructionBlockNode block)
