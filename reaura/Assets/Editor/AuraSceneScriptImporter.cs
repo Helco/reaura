@@ -11,7 +11,7 @@ using UnityEngine.Video;
 
 namespace Aura
 {
-    [ScriptedImporter(1, "psc")]
+    [ScriptedImporter(1, "psc", 100)]
     public class AuraSceneScriptImporter : ScriptedImporter
     {
 
@@ -32,6 +32,18 @@ namespace Aura
             ctx.AddObjectToAsset(sceneGO.name, sceneGO);
             ctx.SetMainObject(sceneGO);
 
+            string ImportSceneEvent(string name)
+            {
+                if (!sceneScript.Events.TryGetValue(name, out var ev))
+                    return "";
+                var eventPos = ev.Action.Position;
+                return sceneScriptText.Substring(eventPos.Character, eventPos.Length);
+            }
+            var sceneComponent = sceneGO.AddComponent<AuraScene>();
+            sceneComponent.SceneName = sceneName;
+            sceneComponent.OnLoadSceneScript = ImportSceneEvent("@OnLoadScene");
+            sceneComponent.OnLoadFirstCubeFaceScript = ImportSceneEvent("@OnLoadFirstCubeFace");
+
             var graphicLists = sceneScript
                 .EntityLists
                 .Values
@@ -47,6 +59,8 @@ namespace Aura
                 .Cast<ObjectListNode>();
             foreach (var cellList in cellLists)
                 ImportCellList(ctx, cellList);
+
+            AuraSOSceneSetImporter.RequestImport();
         }
 
         private Dictionary<string, string> ReadFiles(AssetImportContext ctx)
