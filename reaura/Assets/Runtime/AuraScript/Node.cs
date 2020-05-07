@@ -227,6 +227,7 @@ namespace Aura.Script
 
         public VariableNode(ScriptPos pos, string set, string name) : base(pos)
         {
+            Set = set;
             Name = name;
         }
     }
