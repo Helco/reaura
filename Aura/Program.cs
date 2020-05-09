@@ -8,26 +8,8 @@ using Veldrid.SPIRV;
 using Veldrid.StartupUtilities;
 using System.Threading.Tasks;
 
-namespace AuraStart
+namespace Aura.Veldrid
 {
-    public static class h
-    {
-        public static unsafe string av_strerror(int error)
-        {
-            var bufferSize = 1024;
-            var buffer = stackalloc byte[bufferSize];
-            ffmpeg.av_strerror(error, buffer, (ulong)bufferSize);
-            var message = Marshal.PtrToStringAnsi((IntPtr)buffer);
-            return message;
-        }
-
-        public static int ThrowExceptionIfError(this int error)
-        {
-            if (error < 0) throw new ApplicationException(av_strerror(error));
-            return error;
-        }
-    }
-
     class Program
     {
         private const string VertexCode = @"
@@ -57,6 +39,8 @@ layout(set = 0, binding = 0) uniform sampler2D mainTexture;
 void main()
 {
     fsout_Color = texture(mainTexture, fsin_Pos);
+    if (fsout_Color.z < 0.1)
+        fsout_Color = vec4(1,0,1,1);
 }";
 
         private static unsafe void SetupLogging()
@@ -81,37 +65,10 @@ void main()
             ffmpeg.av_log_set_callback(logCallback);
         }
 
-        private static unsafe void testffmpeg()
-        {
-            var context = ffmpeg.avformat_alloc_context();
-            var frame = ffmpeg.av_frame_alloc();
-            ffmpeg.avformat_open_input(&context, @"C:\dev\aura\out\009\009.pvd\009.bik", null, null).ThrowExceptionIfError();
-           // ffmpeg.avformat_open_input(&context, @"C:\Program Files (x86)\Steam\steamapps\common\Aura Fate of the Ages\FullAnim\Intro_snd.bik", null, null).ThrowExceptionIfError();
-            ffmpeg.avformat_find_stream_info(context, null).ThrowExceptionIfError();
-            Console.WriteLine("Found " + context->nb_streams);
-            for (uint i = 0; i < context->nb_streams; i++)
-                ffmpeg.av_dump_format(context, (int)i, "009.bik", 0);
-
-            AVCodec* codec = null;
-            var index = ffmpeg.av_find_best_stream(context, AVMediaType.AVMEDIA_TYPE_VIDEO, -1, -1, &codec, 0).ThrowExceptionIfError();
-            Console.WriteLine("best stream is encoded with: " + ffmpeg.avcodec_get_name(codec->id));
-
-            var codecContext = ffmpeg.avcodec_alloc_context3(codec);
-            ffmpeg.avcodec_parameters_to_context(codecContext, context->streams[0]->codecpar).ThrowExceptionIfError();
-            ffmpeg.avcodec_open2(codecContext, codec, null).ThrowExceptionIfError();
-            Console.WriteLine($"Size: {codecContext->width}x{codecContext->height} pixFmt: {codecContext->pix_fmt.ToString()}");
-            ffmpeg.avcodec_close(codecContext);
-            ffmpeg.av_frame_unref(frame);
-            ffmpeg.av_frame_free(&frame);
-            ffmpeg.avformat_close_input(&context);
-        }
-
         static void Main(string[] args)
         {
             ffmpeg.RootPath = @"C:\dev\aura\ffmpeg";
             SetupLogging();
-            testffmpeg();
-
 
             VeldridStartup.CreateWindowAndGraphicsDevice(new WindowCreateInfo
             {
@@ -126,14 +83,14 @@ void main()
             var factory = graphicsDevice.ResourceFactory;
             VertexPositionColor[] quadVertices =
             {
-                new VertexPositionColor(new Vector2(-.75f, .75f), RgbaFloat.Red),
-                new VertexPositionColor(new Vector2(.75f, .75f), RgbaFloat.Green),
-                new VertexPositionColor(new Vector2(-.75f, -.75f), RgbaFloat.Blue),
-                new VertexPositionColor(new Vector2(.75f, -.75f), RgbaFloat.Yellow),
-                new VertexPositionColor(new Vector2(-.75f, .75f), RgbaFloat.Red),
-                new VertexPositionColor(new Vector2(.75f, .75f), RgbaFloat.Green),
-                new VertexPositionColor(new Vector2(-.75f, -.75f), RgbaFloat.Blue),
-                new VertexPositionColor(new Vector2(.75f, -.75f), RgbaFloat.Yellow)
+                new VertexPositionColor(new Vector2(-1f, 1f), RgbaFloat.Red),
+                new VertexPositionColor(new Vector2(1f, 1f), RgbaFloat.Green),
+                new VertexPositionColor(new Vector2(-1f, -1f), RgbaFloat.Blue),
+                new VertexPositionColor(new Vector2(1f, -1f), RgbaFloat.Yellow),
+                new VertexPositionColor(new Vector2(-1f, 1f), RgbaFloat.Red),
+                new VertexPositionColor(new Vector2(1f, 1f), RgbaFloat.Green),
+                new VertexPositionColor(new Vector2(-1f, -1f), RgbaFloat.Blue),
+                new VertexPositionColor(new Vector2(1f, -1f), RgbaFloat.Yellow)
             };
             ushort[] quadIndices = { 0, 1, 2, 2, 1, 3 };
             var _vertexBuffer = factory.CreateBuffer(new BufferDescription(4 * VertexPositionColor.SizeInBytes, BufferUsage.VertexBuffer));
@@ -155,18 +112,8 @@ void main()
                 "main");
             var _shaders = factory.CreateFromSpirv(vertexShaderDesc, fragmentShaderDesc);
 
-            //var swTexture = new Veldrid.ImageSharp.ImageSharpTexture(@"C:\dev\aura\out\009\009.psp\Temper1.jpg");
-            //var texture = swTexture.CreateDeviceTexture(graphicsDevice, factory);
-            var texture = factory.CreateTexture(new TextureDescription
-            {
-                Width = 1,
-                Height = 1,
-                Format = PixelFormat.R8_UNorm,
-                ArrayLayers = 1,
-                MipLevels = 1,
-                Type = TextureType.Texture2D,
-                Usage = TextureUsage.Sampled
-            });
+            var texture = ImageLoader.LoadImage(@"C:\Program Files (x86)\Steam\steamapps\common\Aura Fate of the Ages\Global\Cursors\Cursor_Active.dds", graphicsDevice);
+            var cubemap = ImageLoader.LoadCubemap(@"C:\dev\aura\out\102\102.pvd\102.bik", graphicsDevice);
             var sampler = factory.CreateSampler(new SamplerDescription
             {
                 AddressModeU = SamplerAddressMode.Clamp,

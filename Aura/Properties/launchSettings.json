@@ -1,0 +1,8 @@
+{
+  "profiles": {
+    "AuraStart": {
+      "commandName": "Project",
+      "nativeDebugging": true
+    }
+  }
+}
