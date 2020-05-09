@@ -16,10 +16,6 @@ public class AuraWorldRenderer : MonoBehaviour
         { CubemapFace.PositiveZ, new Vector2Int(0, 0) },
         { CubemapFace.NegativeZ, new Vector2Int(2, 0) }
     };
-    private static readonly IEnumerable<CubemapFace> allFaces = Enum
-        .GetValues(typeof(CubemapFace))
-        .Cast<CubemapFace>()
-        .Except(new CubemapFace[] { CubemapFace.Unknown });
 
     [SerializeField]
     private Material spriteMaterial = null;
@@ -72,7 +68,21 @@ public class AuraWorldRenderer : MonoBehaviour
 
         IEnumerable<CubemapFace> facesToRender = facesDirty;
         if (allDirty)
-            facesToRender = allFaces;
+        {
+            // Yes we could use a very nice LINQ statement for this stupid manual list,
+            // but Unity 2019.3.03->2019.3.11 has a irreproducible (only in this whole project reproducible)
+            // crash when this component is added to anything in the scene with a LINQ statement. WTF?! UNITY?!
+            // Try again if you are not frustrated enough and want Unity to help you with that
+            facesToRender = new CubemapFace[]
+            {
+                CubemapFace.PositiveX,
+                CubemapFace.PositiveY,
+                CubemapFace.PositiveZ,
+                CubemapFace.NegativeX,
+                CubemapFace.NegativeY,
+                CubemapFace.NegativeZ
+            };
+        }
         spriteMaterial.SetVector(clipNameID, new Vector4(0.0f, 0.0f, 1.0f, 1.0f));
 
         foreach (var face in facesToRender)
