@@ -6,6 +6,7 @@ out
 [Tt]emp
 [Ll]ogs
 **/[Tt]ools/ffmpeg.exe
+ffmpeg
 reaura/**/*.csproj
 reaura/**/*.sln
 reaura/Assets/Imported
