@@ -73,7 +73,7 @@ namespace Aura.Veldrid
             {
                 X = 100,
                 Y = 100,
-                WindowWidth = (int)(768 * 1.6f),
+                WindowWidth = 1024,
                 WindowHeight = 768,
                 WindowTitle = "Aura ReEngined"
             });
@@ -81,7 +81,7 @@ namespace Aura.Veldrid
             {
                 PreferDepthRangeZeroToOne = true,
                 PreferStandardClipSpaceYDirection = true
-            });
+            }, GraphicsBackend.Direct3D11);
 
             Console.WriteLine("Using " + graphicsDevice.BackendType);
             graphicsDevice.SyncToVerticalBlank = true;
@@ -145,7 +145,7 @@ namespace Aura.Veldrid
             });
             pipelineDescription.ResourceLayouts = new ResourceLayout[] { resourceLayout };
 
-            var projectionMatrix = Matrix4x4.CreatePerspectiveFieldOfView(0.97056514f, window.Width / (float)window.Height, 0.1f, 1.0f);
+            var projectionMatrix = Matrix4x4.CreatePerspectiveFieldOfView(0.97056514f, 1.6f, 0.1f, 1.0f);
             Matrix4x4.Invert(projectionMatrix, out projectionMatrix);
             var viewMatrix = Matrix4x4.Identity;
             var uniformBuffer = factory.CreateBuffer(new BufferDescription
@@ -203,9 +203,7 @@ namespace Aura.Veldrid
 
             window.Resized += () =>
             {
-                projectionMatrix = Matrix4x4.CreatePerspectiveFieldOfView(55.0f * 3.141592653f / 180.0f, window.Width / window.Height, 0.1f, 1.0f);
-                Matrix4x4.Invert(projectionMatrix, out projectionMatrix);
-                graphicsDevice.UpdateBuffer(uniformBuffer, 0, projectionMatrix);
+                graphicsDevice.ResizeMainWindow((uint)window.Width, (uint)window.Height);
             };
 
             while (window.Exists)
@@ -225,6 +223,7 @@ namespace Aura.Veldrid
                 window.PumpEvents();
                 commandList.Begin();
                 commandList.SetFramebuffer(graphicsDevice.SwapchainFramebuffer);
+                commandList.SetViewport(0, new Viewport(0, 0, window.Width, window.Width / 1.6f, 0.0f, 1.0f));
                 commandList.ClearColorTarget(0, RgbaFloat.Black);
                 commandList.SetVertexBuffer(0, _vertexBuffer);
                 commandList.SetIndexBuffer(_indexBuffer, IndexFormat.UInt16);
