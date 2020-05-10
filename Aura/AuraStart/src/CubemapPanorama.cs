@@ -12,6 +12,30 @@ namespace Aura.Veldrid
 
         private static readonly VertexLayoutDescription vertexLayout = new VertexLayoutDescription(
             new VertexElementDescription("Position", VertexElementFormat.Float2, VertexElementSemantic.TextureCoordinate));
+        private static readonly ResourceLayoutDescription resourceLayoutDescr = new ResourceLayoutDescription
+        {
+            Elements = new ResourceLayoutElementDescription[]
+            {
+                new ResourceLayoutElementDescription
+                {
+                    Kind = ResourceKind.TextureReadOnly,
+                    Stages = ShaderStages.Fragment,
+                    Name = "MainTexture"
+                },
+                new ResourceLayoutElementDescription
+                {
+                    Kind = ResourceKind.Sampler,
+                    Stages = ShaderStages.Fragment,
+                    Name = "MainTextureSampler"
+                },
+                new ResourceLayoutElementDescription
+                {
+                    Kind = ResourceKind.UniformBuffer,
+                    Stages = ShaderStages.Vertex,
+                    Name = "UniformBlock"
+                }
+            }
+        };
 
         private GraphicsDevice graphicsDevice;
         public DeviceBuffer vertexBuffer;
@@ -88,31 +112,7 @@ namespace Aura.Veldrid
             framebuffer = fb;
             SetViewport();
 
-            resourceLayout = gd.ResourceFactory.CreateResourceLayout(new ResourceLayoutDescription
-            {
-                Elements = new ResourceLayoutElementDescription[]
-                {
-                    new ResourceLayoutElementDescription
-                    {
-                        Kind = ResourceKind.TextureReadOnly,
-                        Stages = ShaderStages.Fragment,
-                        Name = "MainTexture",
-                        Options = ResourceLayoutElementOptions.None
-                    },
-                    new ResourceLayoutElementDescription
-                    {
-                        Kind = ResourceKind.Sampler,
-                        Stages = ShaderStages.Fragment,
-                        Name = "MainTextureSampler"
-                    },
-                    new ResourceLayoutElementDescription
-                    {
-                        Kind = ResourceKind.UniformBuffer,
-                        Stages = ShaderStages.Vertex,
-                        Name = "UniformBlock"
-                    }
-                }
-            });
+            resourceLayout = gd.ResourceFactory.CreateResourceLayout(resourceLayoutDescr);
             shaders = gd.ResourceFactory.LoadShadersFromFiles(ShaderName);
             pipeline = CreatePipeline();
 
@@ -197,20 +197,15 @@ namespace Aura.Veldrid
         {
             var pipelineDescr = new GraphicsPipelineDescription(
                 blendState: BlendStateDescription.SingleOverrideBlend,
-                depthStencilStateDescription: DepthStencilStateDescription.DepthOnlyLessEqual,
-                rasterizerState: new RasterizerStateDescription(
-                    cullMode: FaceCullMode.Back,
-                    fillMode: PolygonFillMode.Solid,
-                    frontFace: FrontFace.Clockwise,
-                    depthClipEnabled: true,
-                    scissorTestEnabled: false),
+                depthStencilStateDescription: DepthStencilStateDescription.Disabled,
+                rasterizerState: RasterizerStateDescription.Default,
                 primitiveTopology: PrimitiveTopology.TriangleStrip,
                 shaderSet: new ShaderSetDescription(
                     vertexLayouts: new VertexLayoutDescription[] { vertexLayout },
                     shaders: shaders),
                 resourceLayout: resourceLayout,
                 outputs: Framebuffer.OutputDescription);
-            return graphicsDevice.ResourceFactory.CreateGraphicsPipeline(pipelineDescr);
+            return graphicsDevice.ResourceFactory.CreateGraphicsPipeline(ref pipelineDescr);
         }
     }
 }
