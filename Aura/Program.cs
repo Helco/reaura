@@ -15,37 +15,68 @@ namespace Aura.Veldrid
         private const string VertexCode = @"
 #version 450
 
-layout(location = 0) in vec2 Position;
-layout(location = 1) in vec4 Color;
+layout(location = 0) in vec2 vertexPos;
+layout(location = 1) in vec4 vertexColor;
 
-layout(location = 0) out vec4 fsin_Color;
-layout(location = 1) out vec2 fsin_Pos;
+layout(location = 0) out vec4 rayDir;
+layout(set = 0, binding = 2) uniform UniformBlock
+{
+    mat4 invProjection;
+    mat4 invView;
+};
 
 void main()
 {
-    gl_Position = vec4(Position, 0, 1);
-    fsin_Color = Color;
-    fsin_Pos = Position;
+    gl_Position = vec4(vertexPos, 0, 1);
+    rayDir = invProjection * vec4(vertexPos, 0, 1);
+    rayDir.w = 0;
+    rayDir = invView * rayDir;
 }";
 
         private const string FragmentCode = @"
 #version 450
 
-layout(location = 0) in vec4 fsin_Color;
-layout(location = 1) in vec2 fsin_Pos;
+layout(location = 0) in vec4 fsin_rayDir;
 layout(location = 0) out vec4 fsout_Color;
-layout(set = 0, binding = 0) uniform sampler2D mainTexture;
+layout(set = 0, binding = 0) uniform sampler2DArray mainTexture;
 
 void main()
 {
-    fsout_Color = texture(mainTexture, fsin_Pos);
-    if (fsout_Color.z < 0.1)
-        fsout_Color = vec4(1,0,1,1);
+    vec3 rayDir = normalize(fsin_rayDir.xyz);
+    float sc, tc, ma, f;
+    if (abs(rayDir.x) > abs(rayDir.y) && abs(rayDir.x) > abs(rayDir.z))
+    {
+        sc = rayDir.z * sign(rayDir.x);
+        tc = -rayDir.y;
+        ma = abs(rayDir.x);
+        f = rayDir.x < 0 ? 1 : 3;
+    }
+    else if (abs(rayDir.y) > abs(rayDir.z))
+    {
+        sc = -rayDir.x;
+        tc = rayDir.z * sign(rayDir.y);
+        ma = abs(rayDir.y);
+        f = rayDir.y < 0 ? 4 : 5;
+    }
+    else
+    {
+        sc = -rayDir.x * sign(rayDir.z);
+        tc = -rayDir.y;
+        ma = abs(rayDir.z);
+        f = rayDir.z < 0 ? 2 : 0;
+    }
+    vec3 uvw = vec3(
+        (sc / ma + 1) / 2,
+        (tc / ma + 1) / 2,
+        f);
+    fsout_Color = texture(mainTexture, uvw);
+
+    //fsout_Color = vec4((rayDir.xyz + vec3(1,1,1)) / 2, 1);
 }";
 
         private static unsafe void SetupLogging()
         {
-            ffmpeg.av_log_set_level(ffmpeg.AV_LOG_VERBOSE);
+            ffmpeg.av_log_set_level(ffmpeg.AV_LOG_WARNING);
 
             // do not convert to local function
             av_log_set_callback_callback logCallback = (p0, level, format, vl) =>
@@ -70,14 +101,21 @@ void main()
             ffmpeg.RootPath = @"C:\dev\aura\ffmpeg";
             SetupLogging();
 
-            VeldridStartup.CreateWindowAndGraphicsDevice(new WindowCreateInfo
+            //VeldridStartup.CreateWindowAndGraphicsDevice(, out var window, out var graphicsDevice);
+            var window = VeldridStartup.CreateWindow(new WindowCreateInfo
             {
                 X = 100,
                 Y = 100,
-                WindowWidth = 1024,
+                WindowWidth = (int)(768 * 1.6f),
                 WindowHeight = 768,
                 WindowTitle = "Aura ReEngined"
-            }, out var window, out var graphicsDevice);
+            });
+            var graphicsDevice = VeldridStartup.CreateGraphicsDevice(window, new GraphicsDeviceOptions
+            {
+                PreferDepthRangeZeroToOne = true,
+                PreferStandardClipSpaceYDirection = true
+            });
+
             Console.WriteLine("Using " + graphicsDevice.BackendType);
             graphicsDevice.SyncToVerticalBlank = true;
             var factory = graphicsDevice.ResourceFactory;
@@ -113,12 +151,13 @@ void main()
             var _shaders = factory.CreateFromSpirv(vertexShaderDesc, fragmentShaderDesc);
 
             var texture = ImageLoader.LoadImage(@"C:\Program Files (x86)\Steam\steamapps\common\Aura Fate of the Ages\Global\Cursors\Cursor_Active.dds", graphicsDevice);
-            var cubemap = ImageLoader.LoadCubemap(@"C:\dev\aura\out\102\102.pvd\102.bik", graphicsDevice);
+            var cubemap = ImageLoader.LoadCubemap(@"C:\dev\aura\out\009\009.pvd\009.bik", graphicsDevice, asRenderTexture: true);
             var sampler = factory.CreateSampler(new SamplerDescription
             {
                 AddressModeU = SamplerAddressMode.Clamp,
                 AddressModeV = SamplerAddressMode.Clamp,
-                Filter = SamplerFilter.MinPoint_MagPoint_MipPoint
+                AddressModeW = SamplerAddressMode.Clamp,
+                Filter = SamplerFilter.MinLinear_MagLinear_MipPoint
             });
 
             GraphicsPipelineDescription pipelineDescription = new GraphicsPipelineDescription();
@@ -149,18 +188,35 @@ void main()
                         Kind = ResourceKind.Sampler,
                         Stages = ShaderStages.Fragment,
                         Name = "MainTextureSampler"
+                    },
+                    new ResourceLayoutElementDescription
+                    {
+                        Kind = ResourceKind.UniformBuffer,
+                        Stages = ShaderStages.Vertex,
+                        Name = "UniformBlock"
                     }
                 }
             });
             pipelineDescription.ResourceLayouts = new ResourceLayout[] { resourceLayout };
+
+            var projectionMatrix = Matrix4x4.CreatePerspectiveFieldOfView(0.97056514f, window.Width / (float)window.Height, 0.1f, 1.0f);
+            Matrix4x4.Invert(projectionMatrix, out projectionMatrix);
+            var viewMatrix = Matrix4x4.Identity;
+            var uniformBuffer = factory.CreateBuffer(new BufferDescription
+            {
+                SizeInBytes = 2 * 4 * 16,
+                Usage = BufferUsage.UniformBuffer
+            });
+            graphicsDevice.UpdateBuffer(uniformBuffer, 0, new Matrix4x4[] { projectionMatrix, viewMatrix });
 
             var resourceSet = factory.CreateResourceSet(new ResourceSetDescription
             {
                 Layout = resourceLayout,
                 BoundResources = new BindableResource[]
                 {
-                    texture,
-                    sampler
+                    cubemap,
+                    sampler,
+                    uniformBuffer
                 }
             });
 
@@ -173,20 +229,6 @@ void main()
 
             var pipeline = factory.CreateGraphicsPipeline(pipelineDescription);
             var commandList = factory.CreateCommandList();
-            commandList.Begin();
-            commandList.SetFramebuffer(graphicsDevice.SwapchainFramebuffer);
-            commandList.ClearColorTarget(0, RgbaFloat.Black);
-            commandList.SetVertexBuffer(0, _vertexBuffer);
-            commandList.SetIndexBuffer(_indexBuffer, IndexFormat.UInt16);
-            commandList.SetPipeline(pipeline);
-            commandList.SetGraphicsResourceSet(0, resourceSet);
-            commandList.DrawIndexed(
-                indexCount: 6,
-                instanceCount: 1,
-                indexStart: 0,
-                vertexOffset: 0,
-                instanceStart: 0);
-            commandList.End();
 
             var time = new System.Diagnostics.Stopwatch();
             time.Start();
@@ -194,10 +236,35 @@ void main()
             float targetFrametime = 1 / 60.0f;
             var lastSecond = time.Elapsed;
             int fps = 0;
+            Vector2 rot = Vector2.Zero;
+            TimeSpan lastFrame = TimeSpan.Zero;
+            double frameDelta = 0.0;
+
+            window.MouseMove += args =>
+            {
+                if (args.State.IsButtonDown(MouseButton.Right))
+                {
+                    rot += window.MouseDelta * (float)frameDelta * -50.0f * 3.141592653f / 180.0f;
+                    if (rot.X < 0)
+                        rot.X += 2 * 3.141592653f;
+                    if (rot.X > 2 * 3.141592653f)
+                        rot.X -= 2 * 3.141592653f;
+                    rot.Y = MathF.Min(MathF.Max(rot.Y, -MathF.PI / 2), MathF.PI / 2);
+                    viewMatrix = Matrix4x4.CreateFromYawPitchRoll(rot.X, rot.Y, 0.0f);
+                }
+            };
+
+            window.Resized += () =>
+            {
+                projectionMatrix = Matrix4x4.CreatePerspectiveFieldOfView(55.0f * 3.141592653f / 180.0f, window.Width / window.Height, 0.1f, 1.0f);
+                Matrix4x4.Invert(projectionMatrix, out projectionMatrix);
+                graphicsDevice.UpdateBuffer(uniformBuffer, 0, projectionMatrix);
+            };
 
             while (window.Exists)
             {
-                var framestart = time.Elapsed;
+                frameDelta = (time.Elapsed - lastFrame).TotalSeconds;
+                lastFrame = time.Elapsed;
 
                 fps++;
                 if ((time.Elapsed - lastSecond).TotalSeconds >= 1)
@@ -205,14 +272,29 @@ void main()
                     double fpsHP = fps / (time.Elapsed - lastSecond).TotalSeconds;
                     lastSecond = time.Elapsed;
                     fps = 0;
-                    Console.WriteLine($"FPS: {(int)(fpsHP + 0.5)}");
+                    window.Title = "Aura Reengined | FPS: " + (int)(fpsHP + 0.5);
                 }
 
                 window.PumpEvents();
+                commandList.Begin();
+                commandList.SetFramebuffer(graphicsDevice.SwapchainFramebuffer);
+                commandList.ClearColorTarget(0, RgbaFloat.Black);
+                commandList.SetVertexBuffer(0, _vertexBuffer);
+                commandList.SetIndexBuffer(_indexBuffer, IndexFormat.UInt16);
+                commandList.SetPipeline(pipeline);
+                commandList.UpdateBuffer(uniformBuffer, 4 * 16, viewMatrix);
+                commandList.SetGraphicsResourceSet(0, resourceSet);
+                commandList.DrawIndexed(
+                    indexCount: 6,
+                    instanceCount: 1,
+                    indexStart: 0,
+                    vertexOffset: 0,
+                    instanceStart: 0);
+                commandList.End();
                 graphicsDevice.SubmitCommands(commandList);
                 graphicsDevice.SwapBuffers();
 
-                var frametime = time.Elapsed - framestart;
+                var frametime = time.Elapsed - lastFrame;
                 float delay = targetFrametime - (float)frametime.TotalSeconds;
                 if (delay > 0)
                     System.Threading.Thread.Sleep((int)(delay * 1000.0f));

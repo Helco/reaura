@@ -87,19 +87,19 @@ namespace Aura.Veldrid
             sws.Scale(frame, convertedFrame);
         }
 
-        public static Texture LoadImage(string file, GraphicsDevice gd)
+        public static Texture LoadImage(string file, GraphicsDevice gd, bool asRenderTexture = false)
         {
             using var stream = new FileStream(file, FileMode.Open, FileAccess.Read);
-            return LoadImage(stream, gd);
+            return LoadImage(stream, gd, asRenderTexture);
         }
 
-        public static Texture LoadCubemap(string file, GraphicsDevice gd)
+        public static Texture LoadCubemap(string file, GraphicsDevice gd, bool asRenderTexture = false)
         {
             using var stream = new FileStream(file, FileMode.Open, FileAccess.Read);
-            return LoadCubemap(stream, gd);
+            return LoadCubemap(stream, gd, asRenderTexture);
         }
 
-        public static Texture LoadImage(Stream stream, GraphicsDevice gd)
+        public static Texture LoadImage(Stream stream, GraphicsDevice gd, bool asRenderTexture = false)
         {
             using var me = new ImageLoader(stream);
             if (!me.MoveToNextFrame())
@@ -117,7 +117,7 @@ namespace Aura.Veldrid
                 MipLevels = 1,
                 ArrayLayers = 1,
                 Type = TextureType.Texture2D,
-                Usage = TextureUsage.Sampled
+                Usage = TextureUsage.Sampled | (asRenderTexture ? TextureUsage.RenderTarget : 0)
             });
             gd.UpdateTexture(texture,
                 new IntPtr(me.convertedFrame.Ptr->data[0]), (uint)(me.Width * me.Height * 4),
@@ -126,7 +126,7 @@ namespace Aura.Veldrid
             return texture;
         }
 
-        public static Texture LoadCubemap(Stream stream, GraphicsDevice gd)
+        public static Texture LoadCubemap(Stream stream, GraphicsDevice gd, bool asRenderTexture = false)
         {
             using var me = new ImageLoader(stream);
             var texture = gd.ResourceFactory.CreateTexture(new TextureDescription
@@ -136,9 +136,9 @@ namespace Aura.Veldrid
                 Depth = 1,
                 Format = PixelFormat.R8_G8_B8_A8_UNorm,
                 MipLevels = 1,
-                ArrayLayers = 1,
+                ArrayLayers = 6,
                 Type = TextureType.Texture2D,
-                Usage = TextureUsage.Sampled | TextureUsage.Cubemap
+                Usage = TextureUsage.Sampled | (asRenderTexture ? TextureUsage.RenderTarget : 0)
             });
 
             for (uint i = 0; i < 6; i++)
