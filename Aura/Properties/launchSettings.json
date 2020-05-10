@@ -2,6 +2,7 @@
   "profiles": {
     "AuraStart": {
       "commandName": "Project",
+      "workingDirectory": "$(SolutionDir)",
       "nativeDebugging": true
     }
   }

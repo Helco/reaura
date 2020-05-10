@@ -5,6 +5,7 @@
     <TargetFramework>netcoreapp3.1</TargetFramework>
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
     <Nullable>enable</Nullable>
+    <RootNamespace>Aura.Veldrid</RootNamespace>
   </PropertyGroup>
 
   <ItemGroup>

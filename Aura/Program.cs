@@ -7,73 +7,13 @@ using Veldrid;
 using Veldrid.SPIRV;
 using Veldrid.StartupUtilities;
 using System.Threading.Tasks;
+using System.Collections.Generic;
+using System.IO;
 
 namespace Aura.Veldrid
 {
     class Program
     {
-        private const string VertexCode = @"
-#version 450
-
-layout(location = 0) in vec2 vertexPos;
-layout(location = 1) in vec4 vertexColor;
-
-layout(location = 0) out vec4 rayDir;
-layout(set = 0, binding = 2) uniform UniformBlock
-{
-    mat4 invProjection;
-    mat4 invView;
-};
-
-void main()
-{
-    gl_Position = vec4(vertexPos, 0, 1);
-    rayDir = invProjection * vec4(vertexPos, 0, 1);
-    rayDir.w = 0;
-    rayDir = invView * rayDir;
-}";
-
-        private const string FragmentCode = @"
-#version 450
-
-layout(location = 0) in vec4 fsin_rayDir;
-layout(location = 0) out vec4 fsout_Color;
-layout(set = 0, binding = 0) uniform sampler2DArray mainTexture;
-
-void main()
-{
-    vec3 rayDir = normalize(fsin_rayDir.xyz);
-    float sc, tc, ma, f;
-    if (abs(rayDir.x) > abs(rayDir.y) && abs(rayDir.x) > abs(rayDir.z))
-    {
-        sc = rayDir.z * sign(rayDir.x);
-        tc = -rayDir.y;
-        ma = abs(rayDir.x);
-        f = rayDir.x < 0 ? 1 : 3;
-    }
-    else if (abs(rayDir.y) > abs(rayDir.z))
-    {
-        sc = -rayDir.x;
-        tc = rayDir.z * sign(rayDir.y);
-        ma = abs(rayDir.y);
-        f = rayDir.y < 0 ? 4 : 5;
-    }
-    else
-    {
-        sc = -rayDir.x * sign(rayDir.z);
-        tc = -rayDir.y;
-        ma = abs(rayDir.z);
-        f = rayDir.z < 0 ? 2 : 0;
-    }
-    vec3 uvw = vec3(
-        (sc / ma + 1) / 2,
-        (tc / ma + 1) / 2,
-        f);
-    fsout_Color = texture(mainTexture, uvw);
-
-    //fsout_Color = vec4((rayDir.xyz + vec3(1,1,1)) / 2, 1);
-}";
-
         private static unsafe void SetupLogging()
         {
             ffmpeg.av_log_set_level(ffmpeg.AV_LOG_WARNING);
@@ -96,12 +36,39 @@ void main()
             ffmpeg.av_log_set_callback(logCallback);
         }
 
+        private static Shader[] LoadShaders(ResourceFactory factory, string shaderName)
+        {
+            ShaderDescription vertexShaderDesc = new ShaderDescription(
+                ShaderStages.Vertex,
+                Encoding.UTF8.GetBytes(File.ReadAllText($"shaders/{shaderName}.vert")),
+                "main");
+            ShaderDescription fragmentShaderDesc = new ShaderDescription(
+                ShaderStages.Fragment,
+                Encoding.UTF8.GetBytes(File.ReadAllText($"shaders/{shaderName}.frag")),
+                "main");
+            return factory.CreateFromSpirv(vertexShaderDesc, fragmentShaderDesc);
+        }
+
+        private static DeviceBuffer CreateBufferFrom<T>(GraphicsDevice gd, BufferUsage usage, params T[] array) where T : struct
+        {
+            int stride = Marshal.SizeOf<T>();
+            bool isStructured = usage == BufferUsage.StructuredBufferReadOnly || usage == BufferUsage.StructuredBufferReadWrite;
+            var buffer = gd.ResourceFactory.CreateBuffer(new BufferDescription
+            {
+                Usage = usage,
+                SizeInBytes = (uint)(array.Length * stride),
+                StructureByteStride = (uint)(isStructured ? stride : 0)
+            });
+            gd.UpdateBuffer(buffer, 0, array);
+            return buffer;
+        }
+
+
         static void Main(string[] args)
         {
             ffmpeg.RootPath = @"C:\dev\aura\ffmpeg";
             SetupLogging();
 
-            //VeldridStartup.CreateWindowAndGraphicsDevice(, out var window, out var graphicsDevice);
             var window = VeldridStartup.CreateWindow(new WindowCreateInfo
             {
                 X = 100,
@@ -119,36 +86,15 @@ void main()
             Console.WriteLine("Using " + graphicsDevice.BackendType);
             graphicsDevice.SyncToVerticalBlank = true;
             var factory = graphicsDevice.ResourceFactory;
-            VertexPositionColor[] quadVertices =
-            {
-                new VertexPositionColor(new Vector2(-1f, 1f), RgbaFloat.Red),
-                new VertexPositionColor(new Vector2(1f, 1f), RgbaFloat.Green),
-                new VertexPositionColor(new Vector2(-1f, -1f), RgbaFloat.Blue),
-                new VertexPositionColor(new Vector2(1f, -1f), RgbaFloat.Yellow),
-                new VertexPositionColor(new Vector2(-1f, 1f), RgbaFloat.Red),
-                new VertexPositionColor(new Vector2(1f, 1f), RgbaFloat.Green),
-                new VertexPositionColor(new Vector2(-1f, -1f), RgbaFloat.Blue),
-                new VertexPositionColor(new Vector2(1f, -1f), RgbaFloat.Yellow)
-            };
-            ushort[] quadIndices = { 0, 1, 2, 2, 1, 3 };
-            var _vertexBuffer = factory.CreateBuffer(new BufferDescription(4 * VertexPositionColor.SizeInBytes, BufferUsage.VertexBuffer));
-            var _indexBuffer = factory.CreateBuffer(new BufferDescription(6 * sizeof(ushort), BufferUsage.IndexBuffer));
             VertexLayoutDescription vertexLayout = new VertexLayoutDescription(
-                new VertexElementDescription("Position", VertexElementSemantic.TextureCoordinate, VertexElementFormat.Float2),
-                new VertexElementDescription("Color", VertexElementSemantic.TextureCoordinate, VertexElementFormat.Float4));
+                new VertexElementDescription("Position", VertexElementSemantic.TextureCoordinate, VertexElementFormat.Float2));
 
-            graphicsDevice.UpdateBuffer(_vertexBuffer, 0, ref quadVertices[0], 4 * VertexPositionColor.SizeInBytes);
-            graphicsDevice.UpdateBuffer(_indexBuffer, 0, quadIndices);
-
-            ShaderDescription vertexShaderDesc = new ShaderDescription(
-                ShaderStages.Vertex,
-                Encoding.UTF8.GetBytes(VertexCode),
-                "main");
-            ShaderDescription fragmentShaderDesc = new ShaderDescription(
-                ShaderStages.Fragment,
-                Encoding.UTF8.GetBytes(FragmentCode),
-                "main");
-            var _shaders = factory.CreateFromSpirv(vertexShaderDesc, fragmentShaderDesc);
+            var _vertexBuffer = CreateBufferFrom(graphicsDevice, BufferUsage.VertexBuffer,
+                new Vector2(-1f, 1f),
+                new Vector2(1f, 1f),
+                new Vector2(-1f, -1f),
+                new Vector2(1f, -1f));
+            var _indexBuffer = CreateBufferFrom<ushort>(graphicsDevice, BufferUsage.IndexBuffer, 0, 1, 2, 3);
 
             var texture = ImageLoader.LoadImage(@"C:\Program Files (x86)\Steam\steamapps\common\Aura Fate of the Ages\Global\Cursors\Cursor_Active.dds", graphicsDevice);
             var cubemap = ImageLoader.LoadCubemap(@"C:\dev\aura\out\009\009.pvd\009.bik", graphicsDevice, asRenderTexture: true);
@@ -170,7 +116,7 @@ void main()
                 depthClipEnabled: true,
                 scissorTestEnabled: false);
 
-            pipelineDescription.PrimitiveTopology = PrimitiveTopology.TriangleList;
+            pipelineDescription.PrimitiveTopology = PrimitiveTopology.TriangleStrip;
 
             var resourceLayout = factory.CreateResourceLayout(new ResourceLayoutDescription
             {
@@ -220,6 +166,7 @@ void main()
                 }
             });
 
+            var _shaders = LoadShaders(factory, "cubemap");
 
             pipelineDescription.ShaderSet = new ShaderSetDescription(
                 vertexLayouts: new VertexLayoutDescription[] { vertexLayout },
@@ -285,7 +232,7 @@ void main()
                 commandList.UpdateBuffer(uniformBuffer, 4 * 16, viewMatrix);
                 commandList.SetGraphicsResourceSet(0, resourceSet);
                 commandList.DrawIndexed(
-                    indexCount: 6,
+                    indexCount: 4,
                     instanceCount: 1,
                     indexStart: 0,
                     vertexOffset: 0,
@@ -309,18 +256,6 @@ void main()
             _vertexBuffer.Dispose();
             _indexBuffer.Dispose();
             graphicsDevice.Dispose();
-        }
-
-        struct VertexPositionColor
-        {
-            public Vector2 Position; // This is the position, in normalized device coordinates.
-            public RgbaFloat Color; // This is the color of the vertex.
-            public VertexPositionColor(Vector2 position, RgbaFloat color)
-            {
-                Position = position;
-                Color = color;
-            }
-            public const uint SizeInBytes = 24;
         }
     }
 }
