@@ -5,6 +5,7 @@ namespace Aura
 {
     public enum CubeFace
     {
+
         Front = 0,
         Left = 1,
         Back = 2,

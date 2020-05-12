@@ -54,14 +54,17 @@ namespace Aura.Veldrid
                 PreferDepthRangeZeroToOne = true,
                 PreferStandardClipSpaceYDirection = true,
                 SyncToVerticalBlank = true
-            }, GraphicsBackend.Direct3D11);
+            }, GraphicsBackend.Vulkan);
 
             var factory = graphicsDevice.ResourceFactory;
 
-            var texture = ImageLoader.LoadImage(@"C:\Program Files (x86)\Steam\steamapps\common\Aura Fate of the Ages\Global\Cursors\Cursor_Active.dds", graphicsDevice);
+            var sprite = ImageLoader.LoadImage(@"C:\dev\aura\out\009\009.psp\Box09.jpg", graphicsDevice);
             var cubemap = ImageLoader.LoadCubemap(@"C:\dev\aura\out\009\009.pvd\009.bik", graphicsDevice);
+            var worldRenderer = new WorldRenderer(graphicsDevice, 4);
+            worldRenderer.WorldTexture = cubemap;
+            worldRenderer.SetSprite(0, sprite, CubeFace.Back, new Vector2(312, 538), ownsTexture: true, isEnabled: true);
             var panorama = new CubemapPanorama(graphicsDevice, graphicsDevice.SwapchainFramebuffer);
-            panorama.Texture = cubemap;
+            panorama.Texture = worldRenderer.Target;
 
             var time = new GameTime();
             Vector2 rot = Vector2.Zero;
@@ -94,16 +97,19 @@ namespace Aura.Veldrid
                 if (time.HasFramerateChanged)
                     window.Title = $"Aura Reengined | {graphicsDevice.BackendType} | FPS: {(int)(time.Framerate + 0.5)}";
 
-                window.PumpEvents();
+                worldRenderer.Render(waitUntilFinished: true);
                 commandList.Begin();
                 panorama.Render(commandList);
                 commandList.End();
                 graphicsDevice.SubmitCommands(commandList);
                 graphicsDevice.SwapBuffers();
+                window.PumpEvents(); // pump events after swapbuffers in case the window got destroyed
 
                 time.EndFrame();
             }
 
+            worldRenderer.Dispose();
+            panorama.Dispose();
             commandList.Dispose();
             graphicsDevice.Dispose();
         }

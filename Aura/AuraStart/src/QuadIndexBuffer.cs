@@ -22,7 +22,7 @@ namespace Aura.Veldrid
                     return;
                 if (Buffer != null)
                     Buffer.Dispose();
-                Buffer = ResourceFactory.CreateBuffer(new BufferDescription((uint)(value * 2), BufferUsage.IndexBuffer));
+                Buffer = ResourceFactory.CreateBuffer(new BufferDescription((uint)(value * 6 * 2), BufferUsage.IndexBuffer));
                 ushort[]? indices = Enumerable
                     .Repeat(0, value * 6)
                     .Select((_, i) => (ushort)(IndexPattern[i % 6] + i / 6 * 4))
