@@ -14,15 +14,14 @@ namespace Aura.Veldrid
         private AVFormatContextPtr format = new AVFormatContextPtr();
         private StreamAVIOContext avioStream;
         private Queue<AVPacketPtr> packetPool = new Queue<AVPacketPtr>();
-        private Stopwatch watch = new Stopwatch();
-        
+
         public VideoImageTrack ImageTrack { get; }
         public VideoAudioTrack? AudioTrack { get; } = null;
         public double Duration { get; }
-        public double Timestamp => watch.Elapsed.TotalSeconds;
-        public bool IsPlaying => watch.IsRunning;
-        public bool IsStopped => !IsPlaying && Timestamp == 0.0;
-        public bool IsPaused => !IsPlaying && Timestamp > 0.0;
+        public double Time { get; private set; } = 0.0;
+        public bool IsPlaying { get; private set; } = false;
+        public bool IsStopped => !IsPlaying && Time == 0.0;
+        public bool IsPaused => !IsPlaying && Time > 0.0;
         public bool IsLooping { get; set; } = true;
 
         public VideoPlayer(GraphicsDevice graphicsDevice, string fileName)
@@ -44,6 +43,9 @@ namespace Aura.Veldrid
             var imageStream = format.Ptr->streams[imageStreamIndex];
             ImageTrack = new VideoImageTrack(graphicsDevice, this, imageStream);
             Duration = ConvertTimestamp(imageStream->duration, imageStream->time_base);
+
+            ImageTrack.Reset();
+            AudioTrack?.Reset();
         }
 
         protected override void DisposeNative()
@@ -88,33 +90,53 @@ namespace Aura.Veldrid
             }
         }
 
-        public void Update(CommandList commandList)
+        public void Update(double deltaTime, CommandList commandList)
         {
+            if (!IsPlaying)
+                return;
+            Time += Math.Min(deltaTime, 1.0 / ImageTrack.Framerate);
+
             ImageTrack.CommandList = commandList;
             ImageTrack.Update();
             AudioTrack?.Update();
 
-            if (Timestamp >= Duration)
+            if (ImageTrack.IsFinished)
             {
                 Stop();
                 if (IsLooping)
+                {
                     Play();
+                    ImageTrack.Update();
+                    AudioTrack?.Update();
+                }
             }
         }
 
-        public void Play() => watch.Start();
-        public void Pause() => watch.Stop();
+        public void Play() => IsPlaying = true;
+        public void Pause() => IsPlaying = false;
         public void Stop()
         {
-            watch.Stop();
-            watch.Reset();
+            IsPlaying = false;
+            Time = 0.0;
 
-            long timestamp = 0;
+            long startTS = 0;
             if (format.Ptr->start_time != ffmpeg.AV_NOPTS_VALUE)
-                timestamp = format.Ptr->start_time;
-            Check(ffmpeg.av_seek_frame(format, -1, timestamp, ffmpeg.AVSEEK_FLAG_BACKWARD));
+                startTS = format.Ptr->start_time;
+            Check(ffmpeg.av_seek_frame(format, -1, startTS, ffmpeg.AVSEEK_FLAG_BACKWARD));
             ImageTrack.Reset();
             AudioTrack?.Reset();
+        }
+
+        internal double GuessFramerate(AVStream* stream, AVFramePtr? currentFrame)
+        {
+            var frameRate = ffmpeg.av_guess_frame_rate(format, stream, currentFrame);
+            if (frameRate.num == 0)
+                frameRate = stream->avg_frame_rate;
+            if (frameRate.num == 0)
+                frameRate = stream->codec->framerate;
+            if (frameRate.num == 0)
+                throw new NotSupportedException("Could not figure out any frame rate...");
+            return ConvertTimestamp(1, frameRate);
         }
     }
 }

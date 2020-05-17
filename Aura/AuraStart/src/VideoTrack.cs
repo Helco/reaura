@@ -18,15 +18,19 @@ namespace Aura.Veldrid
     {
         public VideoTrackType TrackType { get; }
         public int StreamIndex => stream->index;
+        public bool IsFinished { get; private set; } = false;
+        public double Framerate => player.GuessFramerate(stream, null);
 
         protected VideoPlayer player;
         protected AVStream* stream; // this pointer does not belong to us (to VideoPlayer.format)
         private Queue<AVPacketPtr> packetQueue = new Queue<AVPacketPtr>();
         private bool isDraining = false;
         protected AVCodecContextPtr codecContext;
-        protected AVFramePtr? currentFrame = null;
+        protected AVFramePtr? lastFrame = null;
         protected AVFramePtr? nextFrame = null;
-        protected double nextPTS = float.NaN;
+        private double lastPTS = double.NaN;
+        private double lastTime = double.NaN;
+        private double nextPTS = double.NaN;
 
         protected VideoTrack(VideoPlayer player, AVStream* stream)
         {
@@ -49,8 +53,8 @@ namespace Aura.Veldrid
 
         protected override void DisposeNative()
         {
-            if (currentFrame != null)
-                currentFrame.Dispose();
+            if (lastFrame != null)
+                lastFrame.Dispose();
             if (nextFrame != null)
                 nextFrame.Dispose();
             codecContext.Dispose();
@@ -58,14 +62,22 @@ namespace Aura.Veldrid
 
         public void Reset()
         {
+            IsFinished = false;
             isDraining = false;
             while (packetQueue.Any())
                 packetQueue.Dequeue().Unref();
-            if (currentFrame != null)
-                currentFrame.Unref();
+            if (lastFrame != null)
+                lastFrame.Unref();
             if (nextFrame != null)
                 nextFrame.Unref();
+            lastFrame = null;
+            nextFrame = null;
+            lastPTS = 0.0;
+            lastTime = 0.0;
             ffmpeg.avcodec_flush_buffers(codecContext);
+
+            if (TryDecodeNext())
+                nextPTS = OnGotNextFrame();
         }
 
         protected double ConvertTimestamp(long ts) => FFmpegHelpers.ConvertTimestamp(ts, stream->time_base);
@@ -75,13 +87,19 @@ namespace Aura.Veldrid
 
         public void Update()
         {
-            if (nextFrame == null && TryDecodeNext())
-                nextPTS = OnGotNextFrame();
-            if (nextFrame != null && player.Timestamp >= nextPTS)
+            double curPTS = player.Time - lastTime + lastPTS;
+            if (nextFrame == null)
             {
-                if (currentFrame != null)
-                    currentFrame.Unref();
-                currentFrame = nextFrame;
+                if (curPTS >= nextPTS)
+                    IsFinished = true;
+            }
+            else if (curPTS >= nextPTS)
+            {
+                if (lastFrame != null)
+                    lastFrame.Unref();
+                lastFrame = nextFrame;
+                lastPTS = curPTS;
+                lastTime = player.Time;
                 nextFrame = null;
                 OnSwitchedFrames();
                 if (TryDecodeNext())

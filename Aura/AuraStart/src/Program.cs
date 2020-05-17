@@ -38,8 +38,7 @@ namespace Aura.Veldrid
 
         static void Main(string[] args)
         {
-            //ffmpeg.RootPath = @"C:\dev\aura\ffmpeg";
-            ffmpeg.RootPath = @"C:\vcpkg\packages\ffmpeg_x64-windows\debug\bin";
+            ffmpeg.RootPath = @"C:\dev\aura\ffmpeg";
             SetupLogging();
 
             var window = VeldridStartup.CreateWindow(new WindowCreateInfo
@@ -71,7 +70,7 @@ namespace Aura.Veldrid
             panorama.Texture = worldRenderer.Target;
 
             var time = new GameTime();
-            time.TargetFramerate = 240;
+            time.TargetFramerate = 60;
             Vector2 rot = Vector2.Zero;
 
             window.MouseMove += args =>
@@ -105,7 +104,7 @@ namespace Aura.Veldrid
                     window.Title = $"Aura Reengined | {graphicsDevice.BackendType} | FPS: {(int)(time.Framerate + 0.5)}";
 
                 videoPlayersList.Begin();
-                videoPlayer.Update(videoPlayersList);
+                videoPlayer.Update(time.Delta, videoPlayersList);
                 videoPlayersList.End();
                 videoPlayersFence.Reset();
                 graphicsDevice.SubmitCommands(videoPlayersList, videoPlayersFence);
