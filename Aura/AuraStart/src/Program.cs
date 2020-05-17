@@ -38,7 +38,8 @@ namespace Aura.Veldrid
 
         static void Main(string[] args)
         {
-            ffmpeg.RootPath = @"C:\dev\aura\ffmpeg";
+            //ffmpeg.RootPath = @"C:\dev\aura\ffmpeg";
+            ffmpeg.RootPath = @"C:\vcpkg\packages\ffmpeg_x64-windows\debug\bin";
             SetupLogging();
 
             var window = VeldridStartup.CreateWindow(new WindowCreateInfo
@@ -58,15 +59,19 @@ namespace Aura.Veldrid
 
             var factory = graphicsDevice.ResourceFactory;
 
+            var videoPlayer = new VideoPlayer(graphicsDevice, @"C:\dev\aura\out\009\009.pvd\FireKamin.bik");
+            videoPlayer.Play();
             var sprite = ImageLoader.LoadImage(@"C:\dev\aura\out\009\009.psp\Box09.jpg", graphicsDevice);
             var cubemap = ImageLoader.LoadCubemap(@"C:\dev\aura\out\009\009.pvd\009.bik", graphicsDevice);
             var worldRenderer = new WorldRenderer(graphicsDevice, 4);
             worldRenderer.WorldTexture = cubemap;
             worldRenderer.SetSprite(0, sprite, CubeFace.Back, new Vector2(312, 538), ownsTexture: true, isEnabled: true);
+            worldRenderer.SetSprite(1, videoPlayer.ImageTrack.Target, CubeFace.Right, new Vector2(467, 430), false, true);
             var panorama = new CubemapPanorama(graphicsDevice, graphicsDevice.SwapchainFramebuffer);
             panorama.Texture = worldRenderer.Target;
 
             var time = new GameTime();
+            time.TargetFramerate = 240;
             Vector2 rot = Vector2.Zero;
 
             window.MouseMove += args =>
@@ -90,12 +95,22 @@ namespace Aura.Veldrid
             };
 
             var commandList = factory.CreateCommandList();
+            var videoPlayersList = factory.CreateCommandList();
+            var videoPlayersFence = factory.CreateFence(false);
 
             while (window.Exists)
             {
                 time.BeginFrame();
                 if (time.HasFramerateChanged)
                     window.Title = $"Aura Reengined | {graphicsDevice.BackendType} | FPS: {(int)(time.Framerate + 0.5)}";
+
+                videoPlayersList.Begin();
+                videoPlayer.Update(videoPlayersList);
+                videoPlayersList.End();
+                videoPlayersFence.Reset();
+                graphicsDevice.SubmitCommands(videoPlayersList, videoPlayersFence);
+                graphicsDevice.WaitForFence(videoPlayersFence);
+                worldRenderer.MarkSpriteDirty(1);
 
                 worldRenderer.Render(waitUntilFinished: true);
                 commandList.Begin();
@@ -110,6 +125,8 @@ namespace Aura.Veldrid
 
             worldRenderer.Dispose();
             panorama.Dispose();
+            videoPlayersFence.Dispose();
+            videoPlayersList.Dispose();
             commandList.Dispose();
             graphicsDevice.Dispose();
         }

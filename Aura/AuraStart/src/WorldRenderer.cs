@@ -239,6 +239,8 @@ namespace Aura.Veldrid
 
         public void Render(bool waitUntilFinished = true)
         {
+            if (worldTexture == null)
+                return;
             if (needVertexUpdate)
             {
                 needVertexUpdate = false;

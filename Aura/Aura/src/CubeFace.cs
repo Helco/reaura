@@ -7,9 +7,9 @@ namespace Aura
     {
 
         Front = 0,
-        Left = 1,
+        Right = 1,
         Back = 2,
-        Right = 3,
+        Left = 3,
         Down = 4,
         Up = 5
     }

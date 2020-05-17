@@ -18,6 +18,12 @@ namespace Aura.Veldrid
             }
             return errorCode;
         }
+
+        public static double ConvertTimestamp(long ts, AVRational tb)
+        {
+            double freq = (double)tb.num / tb.den;
+            return freq * ts;
+        }
     }
 
     public unsafe abstract class FFmpegPtr<T> : BaseDisposable where T : unmanaged
@@ -35,7 +41,7 @@ namespace Aura.Veldrid
             }
         }
 
-        public static implicit operator T* (FFmpegPtr<T> ptr) => ptr.Ptr;
+        public static implicit operator T* (FFmpegPtr<T>? ptr) => ptr == null ? null : ptr.Ptr;
     }
 
     public unsafe class AVFormatContextPtr : FFmpegPtr<AVFormatContext>
@@ -73,6 +79,12 @@ namespace Aura.Veldrid
             Ptr = ffmpeg.av_packet_alloc();
         }
 
+        public void Unref()
+        {
+            ffmpeg.av_packet_unref(Ptr);
+            Ptr = null;
+        }
+        
         protected override unsafe void FreeFFmpeg(AVPacket** ptr) =>
             ffmpeg.av_packet_free(ptr);
     }
@@ -82,6 +94,12 @@ namespace Aura.Veldrid
         public AVFramePtr()
         {
             Ptr = ffmpeg.av_frame_alloc();
+        }
+
+        public void Unref()
+        {
+            ffmpeg.av_frame_unref(Ptr);
+            Ptr = null;
         }
 
         protected override unsafe void FreeFFmpeg(AVFrame** ptr) =>
