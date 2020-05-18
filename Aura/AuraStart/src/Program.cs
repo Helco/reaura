@@ -71,26 +71,38 @@ namespace Aura.Veldrid
 
             var time = new GameTime();
             time.TargetFramerate = 60;
-            Vector2 rot = Vector2.Zero;
+            InputSnapshot? inputSnapshot = null;
 
             window.MouseMove += args =>
             {
                 if (args.State.IsButtonDown(MouseButton.Right))
                 {
-                    rot += window.MouseDelta * time.Delta * -20.0f * 3.141592653f / 180.0f;
-                    if (rot.X < 0)
-                        rot.X += 2 * 3.141592653f;
-                    if (rot.X > 2 * 3.141592653f)
-                        rot.X -= 2 * 3.141592653f;
-                    rot.Y = MathF.Min(MathF.Max(rot.Y, -MathF.PI / 2), MathF.PI / 2);
+                    var mouseMove = window.MouseDelta * time.Delta * 20.0f * 3.141592653f / 180.0f;
+                    var rot = panorama.ViewRotation;
+                    rot.X += mouseMove.Y;
+                    rot.Y += mouseMove.X;
+                    if (rot.Y < 0)
+                        rot.Y += 2 * 3.141592653f;
+                    if (rot.Y > 2 * 3.141592653f)
+                        rot.Y -= 2 * 3.141592653f;
+                    rot.X = MathF.Min(MathF.Max(rot.X, -MathF.PI / 2), MathF.PI / 2);
                     panorama.ViewRotation = rot;
                 }
             };
+
 
             window.Resized += () =>
             {
                 graphicsDevice.ResizeMainWindow((uint)window.Width, (uint)window.Height);
                 panorama.Framebuffer = graphicsDevice.SwapchainFramebuffer;
+            };
+
+            window.MouseDown += args =>
+            {
+                if (args.MouseButton != MouseButton.Left || inputSnapshot == null)
+                    return;
+                var aura = panorama.ConvertMouseToAura(inputSnapshot.MousePosition);
+                Console.WriteLine($"Click on  {aura.X}, {aura.Y}");
             };
 
             var commandList = factory.CreateCommandList();
@@ -117,7 +129,7 @@ namespace Aura.Veldrid
                 commandList.End();
                 graphicsDevice.SubmitCommands(commandList);
                 graphicsDevice.SwapBuffers();
-                window.PumpEvents(); // pump events after swapbuffers in case the window got destroyed
+                inputSnapshot = window.PumpEvents(); // pump events after swapbuffers in case the window got destroyed
 
                 time.EndFrame();
             }

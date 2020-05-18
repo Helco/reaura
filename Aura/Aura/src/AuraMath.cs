@@ -24,17 +24,17 @@ namespace Aura
             unityAngle.Y / 360.0f * MaxAuraAngle.X,
             (unityAngle.X + 90.0f) / 180.0f * MaxAuraAngle.Y);
 
-        public static Vector2 AngleToUnity(Vector2 auraAngle) => new Vector2(
+        public static Vector2 AuraToAngle(Vector2 auraAngle) => new Vector2(
             auraAngle.Y / MaxAuraAngle.Y * 180.0f - 90.0f,
             auraAngle.X / MaxAuraAngle.X * 360.0f);
 
-        public static Vector2 AngleToUnityRadians(Vector2 auraAngle) => AngleToUnity(auraAngle) * MathF.PI / 180.0f;
+        public static Vector2 AuraToAngleRadians(Vector2 auraAngle) => AuraToAngle(auraAngle) * MathF.PI / 180.0f;
 
-        public static Vector2 AngleRadiansToAura(Vector2 unityRadians) => AngleToAura(unityRadians * 180.0f / MathF.PI);
+        public static Vector2 AngleRadiansToAura(Vector2 radians) => AngleToAura(radians * 180.0f / MathF.PI);
 
         public static Vector3 AuraOnSphere(Vector2 auraAngle)
         {
-            var radians = AngleToUnityRadians(auraAngle);
+            var radians = AuraToAngleRadians(auraAngle);
             return new Vector3(
                 MathF.Cos(-radians.X) * MathF.Sin(radians.Y),
                 MathF.Sin(-radians.X),

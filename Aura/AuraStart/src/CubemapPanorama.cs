@@ -4,7 +4,7 @@ using Veldrid;
 
 namespace Aura.Veldrid
 {
-    public class CubemapPanorama : BaseDisposable
+    public class CubemapPanorama : BaseDisposable, IScreenShape
     {
         public const float VerticalFOV = 0.97056514f;
         public const float OriginalAspect = 1.6f;
@@ -52,7 +52,7 @@ namespace Aura.Veldrid
         private Texture? texture = null;
         private Framebuffer framebuffer;
 
-        public Matrix4x4 ProjectionMatrix
+        public Matrix4x4 InvProjectionMatrix
         {
             get => matrices[0];
             private set
@@ -101,7 +101,8 @@ namespace Aura.Veldrid
             set
             {
                 viewRotation = value;
-                matrices[1] = Matrix4x4.CreateFromYawPitchRoll(value.X, value.Y, 0.0f);
+                matrices[1] = Matrix4x4.CreateFromQuaternion(Quaternion.CreateFromAxisAngle(Vector3.UnitX, ViewRotation.X) * Quaternion.CreateFromAxisAngle(Vector3.UnitY, ViewRotation.Y));
+                Matrix4x4.Invert(matrices[1], out matrices[1]);
                 areMatricesDirty = true;
             }
         }
@@ -190,7 +191,7 @@ namespace Aura.Veldrid
             Viewport = new Viewport(x, y, width, height, 0.0f, 1.0f);
             var projectionMatrix = Matrix4x4.CreatePerspectiveFieldOfView(VerticalFOV, width / height, 0.01f, 10.0f);
             Matrix4x4.Invert(projectionMatrix, out projectionMatrix);
-            ProjectionMatrix = projectionMatrix;
+            InvProjectionMatrix = projectionMatrix;
         }
 
         private Pipeline CreatePipeline()
@@ -206,6 +207,23 @@ namespace Aura.Veldrid
                 resourceLayout: resourceLayout,
                 outputs: Framebuffer.OutputDescription);
             return graphicsDevice.ResourceFactory.CreateGraphicsPipeline(ref pipelineDescr);
+        }
+
+        public Vector2 ConvertMouseToAura(Vector2 mouse)
+        {
+            Vector4 clipSpace = new Vector4(
+                (mouse.X - Viewport.X - Viewport.Width / 2) / (Viewport.Width / 2),
+                -(mouse.Y - Viewport.Y - Viewport.Height / 2) / (Viewport.Height / 2),
+                1.0f, 1.0f);
+            var cameraSpace = Vector4.Transform(clipSpace, InvProjectionMatrix);
+            var viewSpace = Vector4.Transform(cameraSpace, matrices[1]);
+            var auraSpace = AuraMath.SphereToAura(new Vector3(viewSpace.X, viewSpace.Y, -viewSpace.Z));
+            return auraSpace;
+        }
+
+        public void SetViewAt(Vector2 auraPos)
+        {
+            ViewRotation = AuraMath.AuraToAngleRadians(auraPos);
         }
     }
 }
