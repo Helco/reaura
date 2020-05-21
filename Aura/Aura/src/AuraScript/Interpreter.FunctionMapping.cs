@@ -2,6 +2,7 @@
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
+using System.Numerics;
 using System.Reflection;
 
 namespace Aura.Script
@@ -24,6 +25,16 @@ namespace Aura.Script
             public ParameterInfo[] args;
         }
 
+        private static readonly IReadOnlyDictionary<string, CubeFace> CubeFaceNames = new Dictionary<string, CubeFace>()
+        {
+            { "BACKK", CubeFace.Back },
+            { "FRONT", CubeFace.Front },
+            { "LEFTT", CubeFace.Left },
+            { "RIGHT", CubeFace.Right },
+            { "UPPPP", CubeFace.Up },
+            { "DOWNN", CubeFace.Down }
+        };
+
         private List<ArgumentMapping> argumentMappings = new List<ArgumentMapping>()
         {
             new ArgumentMapping
@@ -43,6 +54,23 @@ namespace Aura.Script
                 csharp = typeof(bool),
                 aura = typeof(NumericNode),
                 mapper = node => (node as NumericNode).Value != 0
+            },
+            new ArgumentMapping
+            {
+                csharp = typeof(Vector2),
+                aura = typeof(VectorNode),
+                mapper = node => new Vector2((node as VectorNode).X, (node as VectorNode).Y)
+            },
+            new ArgumentMapping
+            {
+                csharp = typeof(CubeFace),
+                aura = typeof(StringNode),
+                mapper = node =>
+                {
+                    if (!CubeFaceNames.TryGetValue((node as StringNode).Value, out var face))
+                        throw new InvalidDataException($"{node.Position}: Unknown cube face name \"{(node as StringNode).Value}\"");
+                    return face;
+                }
             }
         };
 

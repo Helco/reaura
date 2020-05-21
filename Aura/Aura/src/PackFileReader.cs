@@ -3,7 +3,7 @@ using System.IO;
 
 namespace Aura
 {
-    public class AuraPackFileReader
+    public class PackFileReader
     {
         private static readonly uint xorKey = 0x556D6EEC;
         private static readonly byte xorKeyByte = 0xB5;
@@ -11,7 +11,7 @@ namespace Aura
 
         private BinaryReader reader;
 
-        public AuraPackFileReader(Stream stream)
+        public PackFileReader(Stream stream)
         {
             reader = new BinaryReader(stream, encoding, true);
         }

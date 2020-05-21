@@ -15,7 +15,9 @@ namespace Aura.Script
         private static readonly IReadOnlyDictionary<string, int> Constants = new Dictionary<string, int>()
         {
             { "TRUE", 1 },
-            { "FALSE", 0 }
+            { "FALSE", 0 },
+            { "ACTIVE", 1 },
+            { "NOACTIVE", 0 }
         };
 
         // Unfortunately this member means that the Interpreter is *not* thread-safe, but it is the most unintrusive way...
@@ -30,6 +32,15 @@ namespace Aura.Script
                     throw new InvalidDataException($"Unknown constant {(v as StringNode).Value}");
                 return value;
             });
+        }
+
+        public Interpreter Clone()
+        {
+            var clone = new Interpreter();
+            clone.variableSets = variableSets.ToDictionary(p => p.Key, p => p.Value);
+            clone.argumentMappings = argumentMappings.ToList();
+            clone.functionMappings = functionMappings.ToDictionary(p => p.Key, p => p.Value);
+            return clone;
         }
 
         public void RegisterVariableSet(string name, IVariableSet set)
