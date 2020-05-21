@@ -39,7 +39,7 @@ namespace Aura.Script
             };
 
             private Tokenizer source;
-            private TextReader reader;
+            private TextReader reader = null!; // will be set by Reset in ctor
             private ScriptPos position;
             private bool didSendEoS;
 

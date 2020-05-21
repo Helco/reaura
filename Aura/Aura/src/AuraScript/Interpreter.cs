@@ -28,8 +28,9 @@ namespace Aura.Script
         {
             RegisterArgumentMapper(typeof(int), typeof(string), v =>
             {
-                if (!Constants.TryGetValue((v as StringNode).Value, out int value))
-                    throw new InvalidDataException($"Unknown constant {(v as StringNode).Value}");
+                var stringNode = (StringNode)v;
+                if (!Constants.TryGetValue(stringNode.Value, out int value))
+                    throw new InvalidDataException($"Unknown constant {stringNode.Value}");
                 return value;
             });
         }
@@ -52,8 +53,8 @@ namespace Aura.Script
 
         public bool Evaluate(ConditionNode condition)
         {
-            if (condition is LogicalNode) return Evaluate(condition as LogicalNode);
-            if (condition is ComparisonNode) return Evaluate(condition as ComparisonNode);
+            if (condition is LogicalNode) return Evaluate((LogicalNode)condition);
+            if (condition is ComparisonNode) return Evaluate((ComparisonNode)condition);
             throw new InvalidProgramException("Unknown condition node");
         }
 
@@ -83,9 +84,9 @@ namespace Aura.Script
 
         public int Evaluate(ValueNode valueNode)
         {
-            if (valueNode is NumericNode) return Evaluate(valueNode as NumericNode);
-            if (valueNode is VariableNode) return Evaluate(valueNode as VariableNode);
-            if (valueNode is StringNode) return Evaluate(valueNode as StringNode);
+            if (valueNode is NumericNode) return Evaluate((NumericNode)valueNode);
+            if (valueNode is VariableNode) return Evaluate((VariableNode)valueNode);
+            if (valueNode is StringNode) return Evaluate((StringNode)valueNode);
             if (valueNode is VectorNode) throw new InvalidDataException("Vectors cannot be evaluated");
             throw new InvalidProgramException("Unknown value node");
         }
@@ -119,10 +120,10 @@ namespace Aura.Script
 
         public void Execute(InstructionNode instruction)
         {
-            if (instruction is AssignmentNode) Execute(instruction as AssignmentNode);
-            else if (instruction is FunctionCallNode) Execute(instruction as FunctionCallNode);
-            else if (instruction is ReturnNode) Execute(instruction as ReturnNode);
-            else if (instruction is IfNode) Execute(instruction as IfNode);
+            if (instruction is AssignmentNode) Execute((AssignmentNode)instruction);
+            else if (instruction is FunctionCallNode) Execute((FunctionCallNode)instruction);
+            else if (instruction is ReturnNode) Execute((ReturnNode)instruction);
+            else if (instruction is IfNode) Execute((IfNode)instruction);
             else throw new InvalidDataException("Unknown instruction node");
         }
 

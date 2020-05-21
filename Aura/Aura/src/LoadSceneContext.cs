@@ -21,6 +21,7 @@ namespace Aura
         public LoadSceneContext(IBackend backend, string sceneName)
         {
             Backend = backend;
+            SceneName = sceneName;
             ScenePath = $"Scenes/{sceneName}/";
 
             AddAssetPack($"{ScenePath}{sceneName}.psp");

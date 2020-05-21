@@ -147,9 +147,9 @@ namespace Aura.Script
     public class FunctionCallNode : InstructionNode
     {
         public string Function { get; }
-        public IEnumerable<ValueNode> Arguments { get; }
+        public IEnumerable<ValueNode?> Arguments { get; }
 
-        public FunctionCallNode(ScriptPos pos, string function, IEnumerable<ValueNode> args) : base(pos)
+        public FunctionCallNode(ScriptPos pos, string function, IEnumerable<ValueNode?> args) : base(pos)
         {
             Function = function;
             Arguments = args;
@@ -160,9 +160,9 @@ namespace Aura.Script
     {
         public ConditionNode Condition { get; }
         public InstructionBlockNode Then { get; }
-        public InstructionBlockNode Else { get; }
+        public InstructionBlockNode? Else { get; }
 
-        public IfNode(ScriptPos pos, ConditionNode condition, InstructionBlockNode thenBlock, InstructionBlockNode elseBlock) : base(pos)
+        public IfNode(ScriptPos pos, ConditionNode condition, InstructionBlockNode thenBlock, InstructionBlockNode? elseBlock) : base(pos)
         {
             Condition = condition;
             Then = thenBlock;

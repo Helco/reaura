@@ -8,6 +8,10 @@
     <RootNamespace>Aura.Veldrid</RootNamespace>
   </PropertyGroup>
 
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|AnyCPU'">
+    <WarningsAsErrors>NU1605;nullable</WarningsAsErrors>
+  </PropertyGroup>
+
   <ItemGroup>
     <PackageReference Include="FFmpeg.AutoGen" Version="4.2.2.2" />
     <PackageReference Include="Veldrid" Version="4.7.0" />

@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Diagnostics.CodeAnalysis;
 using System.Linq;
 using System.Text.RegularExpressions;
 
@@ -70,7 +71,7 @@ namespace Aura.Script
         }
 
         private static readonly Regex VariableRegex = new Regex(@"^(\w+)\.(\w+)$");
-        protected bool TryParseVariable(Token identifier, out VariableNode variable)
+        protected bool TryParseVariable(Token identifier, [MaybeNullWhen(false)] out VariableNode variable)
         {
             variable = null;
             var match = VariableRegex.Match(identifier.Value);
@@ -165,7 +166,7 @@ namespace Aura.Script
         {
             var function = Expect(TokenType.Identifier);
             Expect(TokenType.ExprBracketOpen);
-            var args = new List<ValueNode>();
+            var args = new List<ValueNode?>();
             while(true)
             {
                 var token = Next();

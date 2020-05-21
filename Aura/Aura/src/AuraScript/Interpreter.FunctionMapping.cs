@@ -20,7 +20,7 @@ namespace Aura.Script
 
         private struct FunctionMapping
         {
-            public object thiz;
+            public object? thiz;
             public MethodInfo method;
             public ParameterInfo[] args;
         }
@@ -41,25 +41,25 @@ namespace Aura.Script
             {
                 csharp = typeof(string),
                 aura = typeof(StringNode),
-                mapper = node => (node as StringNode).Value
+                mapper = node => ((StringNode)node).Value
             },
             new ArgumentMapping
             {
                 csharp = typeof(int),
                 aura = typeof(NumericNode),
-                mapper = node => (node as NumericNode).Value
+                mapper = node => ((StringNode)node).Value
             },
             new ArgumentMapping
             {
                 csharp = typeof(bool),
                 aura = typeof(NumericNode),
-                mapper = node => (node as NumericNode).Value != 0
+                mapper = node => ((NumericNode)node).Value != 0
             },
             new ArgumentMapping
             {
                 csharp = typeof(Vector2),
                 aura = typeof(VectorNode),
-                mapper = node => new Vector2((node as VectorNode).X, (node as VectorNode).Y)
+                mapper = node => new Vector2(((VectorNode)node).X, ((VectorNode)node).Y)
             },
             new ArgumentMapping
             {
@@ -67,8 +67,9 @@ namespace Aura.Script
                 aura = typeof(StringNode),
                 mapper = node =>
                 {
-                    if (!CubeFaceNames.TryGetValue((node as StringNode).Value, out var face))
-                        throw new InvalidDataException($"{node.Position}: Unknown cube face name \"{(node as StringNode).Value}\"");
+                    var stringNode = (StringNode)node;
+                    if (!CubeFaceNames.TryGetValue(stringNode.Value, out var face))
+                        throw new InvalidDataException($"{node.Position}: Unknown cube face name \"{stringNode.Value}\"");
                     return face;
                 }
             }
@@ -99,7 +100,7 @@ namespace Aura.Script
             argumentMappings.Add(mapping);
         }
 
-        private void RegisterFunction(string auraName, object thiz, MethodInfo method)
+        private void RegisterFunction(string auraName, object? thiz, MethodInfo method)
         {
             if (functionMappings.ContainsKey(auraName))
                 throw new InvalidProgramException($"There already exists a function mapping for {auraName}");
