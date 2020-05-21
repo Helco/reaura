@@ -16,6 +16,7 @@
   </ItemGroup>
 
   <ItemGroup>
+    <ProjectReference Include="..\Aura.Helpers\Aura.Helpers.csproj" />
     <ProjectReference Include="..\Aura\Aura.csproj" />
   </ItemGroup>
 

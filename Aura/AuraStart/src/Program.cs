@@ -58,17 +58,6 @@ namespace Aura.Veldrid
 
             var factory = graphicsDevice.ResourceFactory;
 
-            var videoPlayer = new VideoPlayer(graphicsDevice, @"C:\dev\aura\out\009\009.pvd\FireKamin.bik");
-            videoPlayer.Play();
-            var sprite = ImageLoader.LoadImage(@"C:\dev\aura\out\009\009.psp\Box09.jpg", graphicsDevice);
-            var cubemap = ImageLoader.LoadCubemap(@"C:\dev\aura\out\009\009.pvd\009.bik", graphicsDevice);
-            var worldRenderer = new WorldRenderer(graphicsDevice, 4);
-            worldRenderer.WorldTexture = cubemap;
-            worldRenderer.SetSprite(0, sprite, CubeFace.Back, new Vector2(312, 538), ownsTexture: true, isEnabled: true);
-            worldRenderer.SetSprite(1, videoPlayer.ImageTrack.Target, CubeFace.Right, new Vector2(467, 430), false, true);
-            var panorama = new CubemapPanorama(graphicsDevice, graphicsDevice.SwapchainFramebuffer);
-            panorama.Texture = worldRenderer.Target;
-
             var time = new GameTime();
             time.TargetFramerate = 60;
             InputSnapshot? inputSnapshot = null;
@@ -77,7 +66,7 @@ namespace Aura.Veldrid
             {
                 if (args.State.IsButtonDown(MouseButton.Right))
                 {
-                    var mouseMove = window.MouseDelta * time.Delta * 20.0f * 3.141592653f / 180.0f;
+                    /*var mouseMove = window.MouseDelta * time.Delta * 20.0f * 3.141592653f / 180.0f;
                     var rot = panorama.ViewRotation;
                     rot.X += mouseMove.Y;
                     rot.Y += mouseMove.X;
@@ -86,7 +75,7 @@ namespace Aura.Veldrid
                     if (rot.Y > 2 * 3.141592653f)
                         rot.Y -= 2 * 3.141592653f;
                     rot.X = MathF.Min(MathF.Max(rot.X, -MathF.PI / 2), MathF.PI / 2);
-                    panorama.ViewRotation = rot;
+                    panorama.ViewRotation = rot;*/
                 }
             };
 
@@ -94,15 +83,15 @@ namespace Aura.Veldrid
             window.Resized += () =>
             {
                 graphicsDevice.ResizeMainWindow((uint)window.Width, (uint)window.Height);
-                panorama.Framebuffer = graphicsDevice.SwapchainFramebuffer;
+                //panorama.Framebuffer = graphicsDevice.SwapchainFramebuffer;
             };
 
             window.MouseDown += args =>
             {
                 if (args.MouseButton != MouseButton.Left || inputSnapshot == null)
                     return;
-                var aura = panorama.ConvertMouseToAura(inputSnapshot.MousePosition);
-                Console.WriteLine($"Click on  {aura.X}, {aura.Y}");
+                //var aura = panorama.ConvertMouseToAura(inputSnapshot.MousePosition);
+                //Console.WriteLine($"Click on  {aura.X}, {aura.Y}");
             };
 
             var commandList = factory.CreateCommandList();
@@ -116,16 +105,16 @@ namespace Aura.Veldrid
                     window.Title = $"Aura Reengined | {graphicsDevice.BackendType} | FPS: {(int)(time.Framerate + 0.5)}";
 
                 videoPlayersList.Begin();
-                videoPlayer.Update(time.Delta, videoPlayersList);
+                //videoPlayer.Update(time.Delta, videoPlayersList);
                 videoPlayersList.End();
                 videoPlayersFence.Reset();
                 graphicsDevice.SubmitCommands(videoPlayersList, videoPlayersFence);
                 graphicsDevice.WaitForFence(videoPlayersFence);
-                worldRenderer.MarkSpriteDirty(1);
+                //worldRenderer.MarkSpriteDirty(1);
 
-                worldRenderer.Render(waitUntilFinished: true);
+                //worldRenderer.Render(waitUntilFinished: true);
                 commandList.Begin();
-                panorama.Render(commandList);
+                //panorama.Render(commandList);
                 commandList.End();
                 graphicsDevice.SubmitCommands(commandList);
                 graphicsDevice.SwapBuffers();
@@ -134,8 +123,8 @@ namespace Aura.Veldrid
                 time.EndFrame();
             }
 
-            worldRenderer.Dispose();
-            panorama.Dispose();
+            //worldRenderer.Dispose();
+            //panorama.Dispose();
             videoPlayersFence.Dispose();
             videoPlayersList.Dispose();
             commandList.Dispose();
