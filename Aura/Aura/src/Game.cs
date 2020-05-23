@@ -25,11 +25,12 @@ namespace Aura
                 new Systems.FonAnimateSystem(),
                 new Systems.CellSystem(),
                 new Systems.GlobalsSystem(Backend),
+                new Systems.InventorySystem(Backend),
                 new Systems.DummyScriptSystem()
             };
 
             foreach (var vsSystem in SystemsWith<IGameVariableSet>())
-                gameInterpreter.RegisterVariableSet(vsSystem.VariableSetName, vsSystem.VariableSet);
+                gameInterpreter.RegisterVariableSet(vsSystem.VariableSetName, vsSystem);
             foreach (var fSystem in SystemsWith<IGameFunctions>())
                 fSystem.RegisterGameFunctions(gameInterpreter);
 

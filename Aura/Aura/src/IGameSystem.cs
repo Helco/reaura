@@ -19,10 +19,9 @@ namespace Aura
         void RegisterGameFunctions(Interpreter interpreter);
     }
 
-    public interface IGameVariableSet : IGameSystem
+    public interface IGameVariableSet : IGameSystem, IVariableSet
     {
         string VariableSetName { get; }
-        IVariableSet VariableSet { get; }
     }
 
     public interface IWorldInputHandler : IGameSystem

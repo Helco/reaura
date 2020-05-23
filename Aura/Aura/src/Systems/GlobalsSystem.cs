@@ -12,7 +12,6 @@ namespace Aura.Systems
         private const string DefaultValueFile = "GlobalSettings.def";
 
         public string VariableSetName => "Global";
-        public IVariableSet VariableSet => this;
 
         private readonly IReadOnlyDictionary<string, int> Constants = new Dictionary<string, int>()
         {
@@ -66,13 +65,13 @@ namespace Aura.Systems
             get
             {
                 if (!values.TryGetValue(name, out int value))
-                    throw new ArgumentOutOfRangeException($"Unknown global variable \"{name}\"");
+                    throw new ArgumentOutOfRangeException(nameof(name), $"Unknown global variable \"{name}\"");
                 return value;
             }
             set
             {
                 if (!values.ContainsKey(name))
-                    throw new ArgumentOutOfRangeException($"Unknown global variable \"{name}\"");
+                    throw new ArgumentOutOfRangeException(nameof(name), $"Unknown global variable \"{name}\"");
                 values[name] = value;
             }
         }

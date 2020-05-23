@@ -45,14 +45,24 @@ namespace Aura.Systems
     {
         public string ObjectListName => "&Cells";
         public string VariableSetName => "Cell";
-        public IVariableSet VariableSet { get; }
 
         private Interpreter? interpreter;
         private Dictionary<string, Cell> cells = new Dictionary<string, Cell>();
 
-        public CellSystem()
+        public int this[string name]
         {
-            VariableSet = new CellVariableSet(this);
+            get
+            {
+                if (!cells.TryGetValue(name, out var cell))
+                    throw new ArgumentOutOfRangeException($"Unknown cell name {name}");
+                return cell.IsActive ? 1 : 0;
+            }
+            set
+            {
+                if (!cells.TryGetValue(name, out var cell))
+                    throw new ArgumentOutOfRangeException($"Unknown cell name {name}");
+                cell.IsActive = value != 0;
+            }
         }
 
         public void AddObject(LoadSceneContext context, ObjectNode objectNode)
@@ -96,32 +106,6 @@ namespace Aura.Systems
         public void RegisterGameFunctions(Interpreter interpreter)
         {
             this.interpreter = interpreter;
-        }
-
-        private class CellVariableSet : IVariableSet
-        {
-            private CellSystem system;
-
-            public CellVariableSet(CellSystem s)
-            {
-                system = s;
-            }
-
-            public int this[string name]
-            {
-                get
-                {
-                    if (!system.cells.TryGetValue(name, out var cell))
-                        throw new ArgumentOutOfRangeException($"Unknown cell name {name}");
-                    return cell.IsActive ? 1 : 0;
-                }
-                set
-                {
-                    if (!system.cells.TryGetValue(name, out var cell))
-                        throw new ArgumentOutOfRangeException($"Unknown cell name {name}");
-                    cell.IsActive = value != 0;
-                }
-            }
         }
     }
 }
