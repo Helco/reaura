@@ -34,11 +34,9 @@ namespace Aura.Veldrid
                 .ToArray();
 
             var fences = sortedRenderers.SelectMany(r => r.RenderFirstPass()).ToArray();
-            //device.WaitForFences(fences.Where(f => !f.Signaled).ToArray(), true, TimeSpan.FromSeconds(1));
-            device.WaitForIdle();
+            device.WaitForFences(fences.Where(f => !f.Signaled).ToArray(), true);
             fences = sortedRenderers.SelectMany(r => r.RenderSecondPass()).ToArray();
-            device.WaitForIdle();
-            //device.WaitForFences(fences.Where(f => !f.Signaled).ToArray(), true);
+            device.WaitForFences(fences.Where(f => !f.Signaled).ToArray(), true);
         }
 
         public IEnumerator<IVeldridWorldRenderer> GetEnumerator() => renderers.GetEnumerator();

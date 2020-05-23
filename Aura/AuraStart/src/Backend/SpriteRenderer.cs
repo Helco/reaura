@@ -45,7 +45,7 @@ namespace Aura.Veldrid
             TargetFace = targetFace;
 
             commandList = common.Factory.CreateCommandList();
-            Fence = common.Factory.CreateFence(false);
+            Fence = common.Factory.CreateFence(true);
             framebuffer = common.Factory.CreateFramebuffer(new FramebufferDescription
             {
                 ColorTargets = new FramebufferAttachmentDescription[]

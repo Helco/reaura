@@ -94,7 +94,7 @@ namespace Aura.Veldrid
             commandList.Begin();
             panorama.Render(commandList);
             commandList.End();
-            device.SubmitCommands(commandList);
+            device.SubmitCommands(commandList, fence);
             return new Fence[] { fence };
         }
 
