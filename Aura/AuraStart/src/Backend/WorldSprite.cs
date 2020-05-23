@@ -12,7 +12,7 @@ namespace Aura.Veldrid
         private SpriteRenderer CurrentRenderer => renderers[(int)face];
         private ResourceSet? resourceSet = null;
         private ITexture? texture = null;
-        private bool isEnabled = true;
+        private bool isEnabled = false;
         private Vector2 position;
         private CubeFace face;
 

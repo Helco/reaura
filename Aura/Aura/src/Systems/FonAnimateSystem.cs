@@ -37,9 +37,9 @@ namespace Aura.Systems
 
         public void RegisterGameFunctions(Interpreter interpreter)
         {
-            interpreter.RegisterFunction<int>("LoadFonAVI", idx => { videos[idx].Stop(); videos[idx].Play(); });
-            interpreter.RegisterFunction<int>("ImmediatelySuspendFonAVI", idx => videos[idx].Pause());
-            interpreter.RegisterFunction<int>("ResumeFonAVI", idx => videos[idx].Play());
+            interpreter.RegisterFunction<int>("LoadFonAVI", ScrLoadFonAVI);
+            interpreter.RegisterFunction<int>("ImmediatelySuspendFonAVI", ScrImmediatelySuspendFonAVI);
+            interpreter.RegisterFunction<int>("ResumeFonAVI", ScrResumeFonAVI);
         }
 
         public void RegisterLoadFunctions(LoadSceneContext context, Interpreter interpreter)
@@ -54,6 +54,23 @@ namespace Aura.Systems
                 sprite.Position = new Vector2(posX, posY);
                 sprite.Texture = video;
             });
+        }
+
+        private void ScrLoadFonAVI(int index)
+        {
+            videos[index].Stop();
+            videos[index].Play();
+            sprites[index].IsEnabled = true;
+        }
+
+        private void ScrImmediatelySuspendFonAVI(int index)
+        {
+            videos[index].Pause();
+        }
+
+        private void ScrResumeFonAVI(int index)
+        {
+            videos[index].Play();
         }
     }
 }
