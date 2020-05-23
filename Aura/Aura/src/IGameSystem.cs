@@ -6,17 +6,19 @@ using Aura.Script;
 
 namespace Aura
 {
-    public interface IGameSystem : IDisposable
-    {}
-
-    public interface IPerTickSystem : IGameSystem
+    public interface IGameSystemContainer
     {
-        void Update(float timeDelta);
+        IReadOnlyCollection<IGameSystem> Systems { get; }
+        IEnumerable<T> SystemsWith<T>() where T : IGameSystem;
     }
-
-    public interface IGameFunctions : IGameSystem
+    
+    public interface IGameSystem : IDisposable
     {
-        void RegisterGameFunctions(Interpreter interpreter);
+        void CrossInitialize(IGameSystemContainer container) { }
+        void OnBeforeSceneChange(LoadSceneContext context) { }
+        void OnAfterSceneChange() { }
+        void RegisterGameFunctions(Interpreter interpreter) { }
+        void Update(float timeDelta) { }
     }
 
     public interface IGameVariableSet : IGameSystem, IVariableSet

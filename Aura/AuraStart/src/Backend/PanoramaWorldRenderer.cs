@@ -121,8 +121,8 @@ namespace Aura.Veldrid
 
         public IReadOnlyList<IWorldSprite> Sprites => sprites;
 
-        public Vector2 ConvertScreenToWorld(Vector2 screenPos) => panorama.ConvertMouseToAura(screenPos);
-        public Vector2 ConvertWorldToScreen(Vector2 worldPos) => throw new NotImplementedException();
+        public bool ConvertScreenToWorld(Vector2 screenPos, out Vector2 worldPos) => panorama.ConvertMouseToAura(screenPos, out worldPos);
+        public bool ConvertWorldToScreen(Vector2 worldPos, out Vector2 screenPos) => throw new NotImplementedException();
         public void SetViewAt(Vector2 worldPos) => panorama.SetViewAt(worldPos);
     }
 }

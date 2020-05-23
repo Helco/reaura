@@ -4,7 +4,7 @@ using Veldrid;
 
 namespace Aura.Veldrid
 {
-    public class CubemapPanorama : BaseDisposable, IScreenShape
+    public class CubemapPanorama : BaseDisposable
     {
         public const float VerticalFOV = 0.97056514f;
         public const float OriginalAspect = 1.6f;
@@ -209,7 +209,7 @@ namespace Aura.Veldrid
             return graphicsDevice.ResourceFactory.CreateGraphicsPipeline(ref pipelineDescr);
         }
 
-        public Vector2 ConvertMouseToAura(Vector2 mouse)
+        public bool ConvertMouseToAura(Vector2 mouse, out Vector2 worldPos)
         {
             Vector4 clipSpace = new Vector4(
                 (mouse.X - Viewport.X - Viewport.Width / 2) / (Viewport.Width / 2),
@@ -217,8 +217,8 @@ namespace Aura.Veldrid
                 1.0f, 1.0f);
             var cameraSpace = Vector4.Transform(clipSpace, InvProjectionMatrix);
             var viewSpace = Vector4.Transform(cameraSpace, matrices[1]);
-            var auraSpace = AuraMath.SphereToAura(new Vector3(viewSpace.X, viewSpace.Y, -viewSpace.Z));
-            return auraSpace;
+            worldPos = AuraMath.SphereToAura(new Vector3(viewSpace.X, viewSpace.Y, -viewSpace.Z));
+            return (Math.Abs(clipSpace.X) <= 1 && Math.Abs(clipSpace.Y) <= 1);
         }
 
         public void SetViewAt(Vector2 auraPos)

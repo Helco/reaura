@@ -6,7 +6,7 @@ using Aura.Script;
 
 namespace Aura.Systems
 {
-    public class FonAnimateSystem : BaseDisposable, IGameSystem, IGameFunctions, IGraphicListSystem, IPerTickSystem
+    public class FonAnimateSystem : BaseDisposable, IGameSystem, IGraphicListSystem
     {
         public string GraphicListName => "&Fon_Animate";
 
@@ -17,6 +17,8 @@ namespace Aura.Systems
             get => sprites.Length;
             set
             {
+                foreach (var video in videos)
+                    video?.Dispose();
                 sprites = new IWorldSprite[value];
                 videos = new IVideoTexture[value];
             }

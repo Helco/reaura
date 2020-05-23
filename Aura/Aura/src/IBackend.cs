@@ -39,8 +39,8 @@ namespace Aura
         int Order { get; set; }
         IReadOnlyList<IWorldSprite> Sprites { get; }
 
-        Vector2 ConvertScreenToWorld(Vector2 screenPos);
-        Vector2 ConvertWorldToScreen(Vector2 worldPos);
+        bool ConvertScreenToWorld(Vector2 screenPos, out Vector2 worldPos);
+        bool ConvertWorldToScreen(Vector2 worldPos, out Vector2 screenPos);
         void SetViewAt(Vector2 worldPos);
     }
 

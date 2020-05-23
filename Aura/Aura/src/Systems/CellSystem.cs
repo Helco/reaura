@@ -41,13 +41,15 @@ namespace Aura.Systems
         }
     }
 
-    public class CellSystem : BaseDisposable, IObjectListSystem, IWorldInputHandler, IGameVariableSet, IGameFunctions
+    public class CellSystem : BaseDisposable, IObjectListSystem, IWorldInputHandler, IGameVariableSet
     {
         public string ObjectListName => "&Cells";
         public string VariableSetName => "Cell";
 
         private Interpreter? interpreter;
         private Dictionary<string, Cell> cells = new Dictionary<string, Cell>();
+
+        public IEnumerable<Cell> Cells => cells.Values;
 
         public int this[string name]
         {
@@ -63,6 +65,11 @@ namespace Aura.Systems
                     throw new ArgumentOutOfRangeException($"Unknown cell name {name}");
                 cell.IsActive = value != 0;
             }
+        }
+
+        public void OnBeforeSceneChange(LoadSceneContext _)
+        {
+            cells.Clear();
         }
 
         public void AddObject(LoadSceneContext context, ObjectNode objectNode)

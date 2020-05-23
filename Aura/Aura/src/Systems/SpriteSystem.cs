@@ -6,7 +6,7 @@ using Aura.Script;
 
 namespace Aura.Systems
 {
-    public class SpriteSystem : BaseDisposable, IGameSystem, IGameFunctions, IGraphicListSystem
+    public class SpriteSystem : BaseDisposable, IGameSystem, IGraphicListSystem
     {
         public string GraphicListName => "&Sprites";
 

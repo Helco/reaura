@@ -4,7 +4,7 @@ using Aura.Script;
 
 namespace Aura.Systems
 {
-    public class DummyScriptSystem : BaseDisposable, IGameFunctions
+    public class DummyScriptSystem : BaseDisposable, IGameSystem
     {
         public void RegisterGameFunctions(Interpreter interpreter)
         {
