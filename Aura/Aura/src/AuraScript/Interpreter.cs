@@ -96,14 +96,14 @@ namespace Aura.Script
         public int Evaluate(VariableNode variable)
         {
             if (!variableSets.TryGetValue(variable.Set, out var variableSet))
-                throw new InvalidDataException($"Unknown variable set {variable.Set}");
+                throw new InvalidDataException($"Unknown variable set \"{variable.Set}\"");
             return variableSet[variable.Name];
         }
 
         public int Evaluate(StringNode str)
         {
             if (!Constants.TryGetValue(str.Value, out int value))
-                throw new InvalidDataException($"Unknown constant {str.Value}");
+                throw new InvalidDataException($"Unknown constant \"{str.Value}\"");
             return value;
         }
 

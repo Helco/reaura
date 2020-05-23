@@ -24,6 +24,7 @@ namespace Aura
                 new Systems.SpriteSystem(),
                 new Systems.FonAnimateSystem(),
                 new Systems.CellSystem(),
+                new Systems.GlobalsSystem(Backend),
                 new Systems.DummyScriptSystem()
             };
 

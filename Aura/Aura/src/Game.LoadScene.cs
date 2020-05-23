@@ -50,8 +50,8 @@ namespace Aura
                     olSystem.AddObject(context, obj);
             }
 
-            //if (context.Scene.Events.TryGetValue("@OnLoadScene", out var onLoadEvent))
-                //gameInterpreter.Execute(onLoadEvent.Action);
+            if (context.Scene.Events.TryGetValue("@OnLoadScene", out var onLoadEvent))
+                gameInterpreter.Execute(onLoadEvent.Action);
         }
     }
 }
