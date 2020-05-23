@@ -36,7 +36,9 @@ namespace Aura.Systems
             interpreter.RegisterFunction<ITexture, int, int, CubeFace>("Sprite", (texture, posX, posY, face) =>
             {
                 var sprite = sprites[nextSpriteI++] = context.AvailableWorldSprites.Dequeue();
-                sprite.Set(face, new Vector2(posX, posY), texture);
+                sprite.Face = face;
+                sprite.Position = new Vector2(posX, posY);
+                sprite.Texture = texture;
             });
         }
     }

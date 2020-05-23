@@ -6,9 +6,9 @@ using Aura.Script;
 
 namespace Aura.Systems
 {
-    public class FonAnimateSystem : BaseDisposable, IGameSystem, IGameFunctions, IGraphicListSystem
+    public class FonAnimateSystem : BaseDisposable, IGameSystem, IGameFunctions, IGraphicListSystem, IPerTickSystem
     {
-        public string GraphicListName => throw new NotImplementedException();
+        public string GraphicListName => "&Fon_Animate";
 
         private IWorldSprite[] sprites = Array.Empty<IWorldSprite>();
         private IVideoTexture[] videos = Array.Empty<IVideoTexture>();
@@ -28,6 +28,13 @@ namespace Aura.Systems
                 video?.Dispose();
         }
 
+        public void Update(float timeDelta)
+        {
+            for (int i = 0; i < sprites.Length; i++)
+                if (sprites[i].IsEnabled && videos[i].IsPlaying)
+                    sprites[i].MarkDirty();
+        }
+
         public void RegisterGameFunctions(Interpreter interpreter)
         {
             interpreter.RegisterFunction<int>("LoadFonAVI", idx => { videos[idx].Stop(); videos[idx].Play(); });
@@ -43,7 +50,9 @@ namespace Aura.Systems
             {
                 videos[nextVideoI] = video;
                 var sprite = sprites[nextVideoI++] = context.AvailableWorldSprites.Dequeue();
-                sprite.Set(face, new Vector2(posX, posY), video);
+                sprite.Face = face;
+                sprite.Position = new Vector2(posX, posY);
+                sprite.Texture = video;
             });
         }
     }

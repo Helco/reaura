@@ -88,14 +88,14 @@ namespace Aura
         public ITexture ScrArgLoadImage(ValueNode node)
         {
             var textureName = ((StringNode)node).Value;
-            if (!SceneAssets.TryGetValue(textureName, out var stream))
+            if (!SceneAssets.TryGetValue(textureName.Replace(".\\", ""), out var stream))
                 throw new FileNotFoundException($"{node.Position}: Could not find texture \"{textureName}\"");
             return Backend.CreateImage(stream);
         }
         public ITexture ScrArgLoadVideo(ValueNode node)
         {
             var videoName = ((StringNode)node).Value;
-            if (!SceneAssets.TryGetValue(videoName, out var stream))
+            if (!SceneAssets.TryGetValue(videoName.Replace(".\\", ""), out var stream))
                 throw new FileNotFoundException($"{node.Position}: Could not find video \"{videoName}\"");
             return Backend.CreateVideo(stream);
         }

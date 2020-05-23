@@ -24,6 +24,28 @@ namespace Aura.Veldrid
             double freq = (double)tb.num / tb.den;
             return freq * ts;
         }
+
+        public static void SetupLoggingToConsole()
+        {
+            ffmpeg.av_log_set_level(ffmpeg.AV_LOG_WARNING);
+
+            // do not convert to local function
+            av_log_set_callback_callback logCallback = (p0, level, format, vl) =>
+            {
+                if (level > ffmpeg.av_log_get_level()) return;
+
+                var lineSize = 1024;
+                var lineBuffer = stackalloc byte[lineSize];
+                var printPrefix = 1;
+                ffmpeg.av_log_format_line(p0, level, format, vl, lineBuffer, lineSize, &printPrefix);
+                var line = Marshal.PtrToStringAnsi((IntPtr)lineBuffer);
+                Console.ForegroundColor = ConsoleColor.Yellow;
+                Console.Write(line);
+                Console.ResetColor();
+            };
+
+            ffmpeg.av_log_set_callback(logCallback);
+        }
     }
 
     public unsafe abstract class FFmpegPtr<T> : BaseDisposable where T : unmanaged

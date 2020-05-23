@@ -47,7 +47,7 @@ namespace Aura.Script
             {
                 csharp = typeof(int),
                 aura = typeof(NumericNode),
-                mapper = node => ((StringNode)node).Value
+                mapper = node => ((NumericNode)node).Value
             },
             new ArgumentMapping
             {

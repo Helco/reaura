@@ -14,8 +14,9 @@ namespace Aura
             var context = new LoadSceneContext(Backend, sceneName);
 
             var graphicLists = context.Scene.EntityLists.Values.OfType<GraphicListNode>();
-            worldRenderer = Backend.CreateWorldRenderer(graphicLists.Sum(l => l.Graphics.Count));
-            context.AvailableWorldSprites = new Queue<IWorldSprite>(worldRenderer.Sprites);
+            int spriteCapacity = graphicLists.Sum(l => l.Graphics.Count);
+            panorama = Backend.CreatePanorama(context.SceneAssets[$"{sceneName}.bik"], spriteCapacity);
+            context.AvailableWorldSprites = new Queue<IWorldSprite>(panorama.Sprites);
 
             var graphicListSystems = SystemsWith<IGraphicListSystem>();
             var graphicListInterpreter = new Interpreter();
@@ -49,8 +50,8 @@ namespace Aura
                     olSystem.AddObject(context, obj);
             }
 
-            if (context.Scene.Events.TryGetValue("@OnLoadScene", out var onLoadEvent))
-                gameInterpreter.Execute(onLoadEvent.Action);
+            //if (context.Scene.Events.TryGetValue("@OnLoadScene", out var onLoadEvent))
+                //gameInterpreter.Execute(onLoadEvent.Action);
         }
     }
 }
