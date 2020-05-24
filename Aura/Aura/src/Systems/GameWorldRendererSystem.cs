@@ -36,6 +36,7 @@ namespace Aura.Systems
 
         public void Update(float timeDelta) => lastTimeDelta = timeDelta;
 
+        // TODO: This is Input, not world rendering, what does it do here?!
         private void OnScreenClick(Vector2 screenPos)
         {
             if (WorldRenderer != null && WorldRenderer.ConvertScreenToWorld(screenPos, out var worldPos))

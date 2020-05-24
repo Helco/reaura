@@ -43,12 +43,19 @@ namespace Aura.Veldrid
             InputSnapshot? inputSnapshot = null;
             var backend = new VeldridBackend(window, graphicsDevice);
             backend.AssetPath = @"C:\Program Files (x86)\Steam\steamapps\common\Aura Fate of the Ages";
-            var game = new Game(backend);
+            var game = new Game(backend,
+                new DebugCellSystem(backend));
 
             window.Resized += () =>
             {
                 graphicsDevice.ResizeMainWindow((uint)window.Width, (uint)window.Height);
                 //panorama.Framebuffer = graphicsDevice.SwapchainFramebuffer;
+            };
+
+            window.KeyDown += args =>
+            {
+                foreach (var system in game.SystemsWith<IDebugGameSystem>())
+                    system.OnKeyDown(args.Key);
             };
 
             while (window.Exists)

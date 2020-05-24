@@ -28,22 +28,27 @@ namespace Aura.Veldrid
         public Vector2 Size => new Vector2(Texture.Width, Texture.Height);
     }
 
+    public interface IDebugGameSystem : IGameSystem
+    {
+        void OnKeyDown(Key key) { }
+    }
+
     public class VeldridBackend : BaseDisposable, IBackend
     {
-        private Sdl2Window window;
-        private GraphicsDevice device;
-        private SpriteRendererCommon spriteRendererCommon;
-        private VideoTextureSet videoTextureSet;
-        private WorldRendererSet worldRendererSet;
-        private ResourceFactory factory => device.ResourceFactory;
+        public Sdl2Window Window { get; }
+        public GraphicsDevice Device { get; }
+        public SpriteRendererCommon SpriteRendererCommon { get; }
+        public VideoTextureSet VideoTextureSet { get; }
+        public WorldRendererSet WorldRendererSet { get; }
+        public ResourceFactory Factory => Device.ResourceFactory;
 
         public VeldridBackend(Sdl2Window window, GraphicsDevice device)
         {
-            this.window = window;
-            this.device = device;
-            spriteRendererCommon = new SpriteRendererCommon(device);
-            videoTextureSet = new VideoTextureSet(device);
-            worldRendererSet = new WorldRendererSet(device);
+            this.Window = window;
+            this.Device = device;
+            SpriteRendererCommon = new SpriteRendererCommon(device);
+            VideoTextureSet = new VideoTextureSet(device);
+            WorldRendererSet = new WorldRendererSet(device);
 
             window.MouseMove += HandleMouseMove;
             window.MouseDown += HandleMouseDown;
@@ -51,18 +56,18 @@ namespace Aura.Veldrid
 
         protected override void DisposeManaged()
         {
-            spriteRendererCommon.Dispose();
-            videoTextureSet.Dispose();
+            SpriteRendererCommon.Dispose();
+            VideoTextureSet.Dispose();
         }
 
         public void Update(float timeDelta)
         {
-            videoTextureSet.Update(timeDelta);
+            VideoTextureSet.Update(timeDelta);
         }
 
         public void Render()
         {
-            worldRendererSet.RenderAll();
+            WorldRendererSet.RenderAll();
         }
 
         public InputSnapshot? CurrentInput { get; set; }
@@ -71,7 +76,7 @@ namespace Aura.Veldrid
         public Vector2 CursorPosition
         {
             get => CurrentInput?.MousePosition ?? Vector2.Zero;
-            set => window.SetMousePosition(value);
+            set => Window.SetMousePosition(value);
         }
 
         public event Action<Vector2> OnClick = _ => { };
@@ -86,7 +91,7 @@ namespace Aura.Veldrid
         private void HandleMouseMove(MouseMoveEventArgs args)
         {
             if (args.State.IsButtonDown(MouseButton.Right))
-                OnViewDrag(window.MouseDelta);
+                OnViewDrag(Window.MouseDelta);
         }
 
         public Stream? OpenAssetFile(string resourceName)
@@ -105,16 +110,16 @@ namespace Aura.Veldrid
         }
 
         public ITexture CreateImage(Stream stream) =>
-            new AuraTexture(ImageLoader.LoadImage(stream, device), ownsTexture: true);
+            new AuraTexture(ImageLoader.LoadImage(stream, Device), ownsTexture: true);
 
         public IVideoTexture CreateVideo(Stream stream) =>
-            videoTextureSet.CreateFromStream(stream);
+            VideoTextureSet.CreateFromStream(stream);
 
         public IPanoramaWorldRenderer CreatePanorama(Stream stream, int spriteCapacity)
         {
-            var worldRenderer = new PanoramaWorldRenderer(spriteCapacity, spriteRendererCommon, device.SwapchainFramebuffer);
-            worldRenderer.WorldTexture = ImageLoader.LoadCubemap(stream, device);
-            worldRenderer.WorldRendererSet = worldRendererSet;
+            var worldRenderer = new PanoramaWorldRenderer(spriteCapacity, SpriteRendererCommon, Device.SwapchainFramebuffer);
+            worldRenderer.WorldTexture = ImageLoader.LoadCubemap(stream, Device);
+            worldRenderer.WorldRendererSet = WorldRendererSet;
             return worldRenderer;
         }
     }

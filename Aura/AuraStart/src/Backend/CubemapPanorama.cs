@@ -61,6 +61,7 @@ namespace Aura.Veldrid
                 areMatricesDirty = true;
             }
         }
+        public Matrix4x4 InvViewMatrix => matrices[1];
         public Viewport Viewport { get; private set; }
         public Framebuffer Framebuffer
         {

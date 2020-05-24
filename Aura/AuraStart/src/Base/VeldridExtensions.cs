@@ -36,5 +36,8 @@ namespace Aura.Veldrid
             return buffer;
         }
 
+        public static RgbaFloat WithAlpha(this RgbaFloat c, float alpha) =>
+            new RgbaFloat(c.R, c.G, c.B, alpha);
+
     }
 }

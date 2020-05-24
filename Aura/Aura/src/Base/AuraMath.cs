@@ -38,7 +38,7 @@ namespace Aura
             return new Vector3(
                 MathF.Cos(-radians.X) * MathF.Sin(radians.Y),
                 MathF.Sin(-radians.X),
-                MathF.Cos(-radians.X) * MathF.Cos(radians.Y));
+                MathF.Cos(-radians.X) * MathF.Cos(radians.Y) * -1);
         }
 
         public static Vector2 SphereToAura(Vector3 pos)
@@ -49,6 +49,15 @@ namespace Aura
             if (radians.Y < 0.0f)
                 radians.Y += 2 * MathF.PI;
             return AngleRadiansToAura(radians);
+        }
+
+        public static Vector2 DistanceToBorder(Vector2 auraPos, Vector2 min, Vector2 max)
+        {
+            Vector2 center = (min + max) * 0.5f;
+            Vector2 halfSize = (max - min) * 0.5f;
+            return new Vector2(
+                halfSize.X - Math.Abs(auraPos.X - center.X),
+                halfSize.Y - Math.Abs(auraPos.Y - center.Y));
         }
     }
 }

@@ -12,8 +12,6 @@ namespace Aura.Veldrid
 
         private GraphicsDevice device;
         private CubemapPanorama panorama;
-        private CommandList commandList;
-        private Fence fence;
         private Texture cubemap;
         private SpriteRenderer[] spriteRenderers = new SpriteRenderer[FaceCount];
         private WorldSprite[] sprites;
@@ -45,8 +43,6 @@ namespace Aura.Veldrid
         public PanoramaWorldRenderer(int spriteCapacity, SpriteRendererCommon common, Framebuffer framebuffer, uint worldResolution = 1024)
         {
             device = common.Device;
-            commandList = common.Factory.CreateCommandList();
-            fence = common.Factory.CreateFence(true);
             cubemap = common.Factory.CreateTexture(new TextureDescription
             {
                 Width = worldResolution,
@@ -70,8 +66,6 @@ namespace Aura.Veldrid
         protected override void DisposeManaged()
         {
             panorama.Dispose();
-            commandList.Dispose();
-            fence.Dispose();
             cubemap.Dispose();
             foreach (var spriteRenderer in spriteRenderers)
                 spriteRenderer.Dispose();
@@ -81,22 +75,14 @@ namespace Aura.Veldrid
             worldTexture?.Dispose();
         }
 
-        public IEnumerable<Fence> RenderFirstPass()
+        public IEnumerable<Fence> RenderPrePasses()
         {
             foreach (var spriteRenderer in spriteRenderers)
                 spriteRenderer.Render();
             return spriteRenderers.Select(r => r.Fence);
         }
 
-        public IEnumerable<Fence> RenderSecondPass()
-        {
-            fence.Reset();
-            commandList.Begin();
-            panorama.Render(commandList);
-            commandList.End();
-            device.SubmitCommands(commandList, fence);
-            return new Fence[] { fence };
-        }
+        public void RenderMainPass(CommandList commandList) => panorama.Render(commandList);
 
         public Vector2 ViewRotation
         {
@@ -124,5 +110,23 @@ namespace Aura.Veldrid
         public bool ConvertScreenToWorld(Vector2 screenPos, out Vector2 worldPos) => panorama.ConvertMouseToAura(screenPos, out worldPos);
         public bool ConvertWorldToScreen(Vector2 worldPos, out Vector2 screenPos) => throw new NotImplementedException();
         public void SetViewAt(Vector2 worldPos) => panorama.SetViewAt(worldPos);
+        public Matrix4x4 ProjectionMatrix
+        {
+            get
+            {
+                Matrix4x4 result;
+                Matrix4x4.Invert(panorama.InvProjectionMatrix, out result);
+                return result;
+            }
+        }
+        public Matrix4x4 ViewMatrix
+        {
+            get
+            {
+                Matrix4x4 result;
+                Matrix4x4.Invert(panorama.InvViewMatrix, out result);
+                return result;
+            }
+        }
     }
 }

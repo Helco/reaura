@@ -7,7 +7,7 @@ using Aura.Systems;
 
 namespace Aura
 {
-    public partial class Game : IGameSystemContainer
+    public partial class Game : BaseDisposable, IGameSystemContainer
     {
         private IBackend Backend { get; }
         private IGameSystem[] systems;
@@ -16,7 +16,7 @@ namespace Aura
         public IReadOnlyCollection<IGameSystem> Systems => systems;
         public IEnumerable<T> SystemsWith<T>() where T : IGameSystem => systems.OfType<T>();
 
-        public Game(IBackend backend)
+        public Game(IBackend backend, params IGameSystem[] backendSystems)
         {
             Backend = backend;
             gameInterpreter = new Interpreter();
@@ -29,7 +29,7 @@ namespace Aura
                 new FonAnimateSystem(),
                 new CellSystem(),
                 new DummyScriptSystem()
-            };
+            }.Concat(backendSystems).ToArray();
             foreach (var system in Systems)
                 system.CrossInitialize(this);
             foreach (var vsSystem in SystemsWith<IGameVariableSet>())
@@ -38,6 +38,12 @@ namespace Aura
                 fSystem.RegisterGameFunctions(gameInterpreter);
 
             LoadScene("009");
+        }
+
+        protected override void DisposeManaged()
+        {
+            foreach (var system in Systems)
+                system.Dispose();
         }
 
         public void Update(float timeDelta)
