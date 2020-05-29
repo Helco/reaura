@@ -149,7 +149,7 @@ namespace Aura.Veldrid
                             return new Vertex()
                             {
                                 pos = AuraMath.AuraOnSphere(auraPos),
-                                uv = AuraMath.DistanceToBorder(auraPos, cell.UpperLeft, cell.LowerRight),
+                                uv = AuraMath.DistanceToBorder(auraPos, cell.UpperLeft, cell.UpperLeft + cell.Size), // unnormalized lowerright
                                 cellIndex = cellI
                             };
                         })

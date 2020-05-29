@@ -12,7 +12,7 @@ namespace Aura.Systems
         public string Name { get; }
         public bool IsActive { get; set; }
         public Vector2 UpperLeft { get; }
-        public Vector2 LowerRight => UpperLeft + Size;
+        public Vector2 LowerRight => AuraMath.NormalizeAura(UpperLeft + Size);
         public Vector2 Size { get; }
         public InstructionBlockNode Action { get; }
 
