@@ -2,6 +2,7 @@
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
+using System.Numerics;
 using Aura.Script;
 using Aura.Systems;
 
@@ -36,8 +37,9 @@ namespace Aura
                 gameInterpreter.RegisterVariableSet(vsSystem.VariableSetName, vsSystem);
             foreach (var fSystem in Systems)
                 fSystem.RegisterGameFunctions(gameInterpreter);
+            gameInterpreter.RegisterFunction<string, int, int>("LoadSceneTransfuse", ScrLoadSceneTransfuse);
 
-            LoadScene("009");
+            LoadScene("008");
         }
 
         protected override void DisposeManaged()
@@ -50,6 +52,12 @@ namespace Aura
         {
             foreach (var ptSystem in Systems)
                 ptSystem.Update(timeDelta);
+        }
+
+        private void ScrLoadSceneTransfuse(string sceneName, int startPosX, int startPosY)
+        {
+            LoadScene(sceneName);
+            SystemsWith<GameWorldRendererSystem>().Single().WorldRenderer?.SetViewAt(new Vector2(startPosX, startPosY));
         }
 
         private void LoadScene(string sceneName)
