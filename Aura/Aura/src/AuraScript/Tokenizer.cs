@@ -23,7 +23,7 @@ namespace Aura.Script
         IEnumerator<Token> IEnumerable<Token>.GetEnumerator() => GetEnumerator();
         IEnumerator IEnumerable.GetEnumerator() => GetEnumerator();
 
-        public class TokenizerEnumerator : IEnumerator<Token>, IEnumerator
+        public sealed class TokenizerEnumerator : IEnumerator<Token>, IEnumerator
         {
             private static readonly IReadOnlyDictionary<char, TokenType> SingleCharTokens = new Dictionary<char, TokenType>()
             {
@@ -81,16 +81,18 @@ namespace Aura.Script
                     if (char.IsWhiteSpace((char)ch))
                         Read();
                     else if (ch == '*' || ch == '/')
-                    {
-                        do
-                        {
-                            ch = Read();
-                        } while (ch >= 0 && ch != '\n');
-                    }
+                        SkipToNextLine();
                     else
                         return;
                     ch = Peek();
                 }
+            }
+
+            public void SkipToNextLine()
+            {
+                int ch = Peek();
+                while (ch >= 0 && ch != '\n')
+                    ch = Read();
             }
 
             public string ReadWhile(string prefix, Predicate<char> isValid)
@@ -147,10 +149,10 @@ namespace Aura.Script
 
                 if (char.IsDigit(ch) || ch == '-')
                 {
-                    string value = ReadWhile("" + (char)Read(), char.IsDigit);
-                    if (value == "-")
-                        throw new Exception("Numbers need at least one digit");
-                    Current = new Token(TokenType.Integer, position - tokenStart, value);
+                    string value = ReadWhile("" + (char)Read(), c => char.IsDigit(c) || c == '.');
+                    if (!double.TryParse(value, out var _))
+                        throw new Exception("Invalid number format");
+                    Current = new Token(TokenType.Number, position - tokenStart, value);
                     return true;
                 }
 

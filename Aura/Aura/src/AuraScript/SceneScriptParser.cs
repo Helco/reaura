@@ -10,7 +10,7 @@ namespace Aura.Script
 
         private GraphicNode ParseGraphic()
         {
-            var id = Expect(TokenType.Integer);
+            var id = Expect(TokenType.Number);
             Expect(TokenType.Assign);
             return new GraphicNode(CalcPos(id), int.Parse(id.Value), ParseFunctionCall());
         }
@@ -18,7 +18,7 @@ namespace Aura.Script
         private GraphicListNode ParseGraphicList()
         {
             var name = Expect(TokenType.Identifier);
-            var graphics = ParseBlockList(TokenType.Integer, ParseGraphic);
+            var graphics = ParseBlockList(TokenType.Number, ParseGraphic);
             return new GraphicListNode(CalcPos(name), name.Value, graphics.ToDictionary(g => g.ID, g => g));
         }
 
@@ -26,7 +26,7 @@ namespace Aura.Script
         {
             var name = Expect(TokenType.Identifier);
             var bracket = Expect(TokenType.BlockBracketOpen);
-            var key = Expect(TokenType.Identifier, TokenType.Integer, TokenType.BlockBracketClose);
+            var key = Expect(TokenType.Identifier, TokenType.Number, TokenType.BlockBracketClose);
             PushBack(key, bracket, name);
             if (key.Type == TokenType.Identifier)
                 return ParseObjectList();

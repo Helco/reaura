@@ -91,7 +91,7 @@ namespace Aura.Script
             throw new InvalidProgramException("Unknown value node");
         }
 
-        public int Evaluate(NumericNode numeric) => numeric.Value;
+        public int Evaluate(NumericNode numeric) => (int)numeric.Value;
 
         public int Evaluate(VariableNode variable)
         {

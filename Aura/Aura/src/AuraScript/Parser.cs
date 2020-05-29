@@ -8,7 +8,7 @@ namespace Aura.Script
 {
     public abstract class Parser
     {
-        IEnumerator<Token> scanner;
+        Tokenizer.TokenizerEnumerator scanner;
         Stack<Token> backStack = new Stack<Token>();
 
         protected Parser(Tokenizer tokenizer)
@@ -52,8 +52,8 @@ namespace Aura.Script
             return token.Value;
         }
 
-        protected ScriptPos CalcPos(Token first) => CalcPos(first.Pos);
-        protected ScriptPos CalcPos(ScriptPos first) => Peek().Pos - first;
+        protected ScriptPos CalcPos(Token first, Token? next = null) => CalcPos(first.Pos, next?.Pos);
+        protected ScriptPos CalcPos(ScriptPos first, ScriptPos? next = null) => (next ?? Peek().Pos) - first;
 
         protected IEnumerable<T> ParseBlockList<T>(TokenType firstToken, Func<T> parse)
         {
@@ -84,18 +84,18 @@ namespace Aura.Script
         protected VectorNode ParseVector()
         {
             var bracketOpen = Expect(TokenType.TupleBracketOpen);
-            var x = Expect(TokenType.Integer);
+            var x = Expect(TokenType.Number);
             Expect(TokenType.Comma);
-            var y = Expect(TokenType.Integer);
+            var y = Expect(TokenType.Number);
             Expect(TokenType.TupleBracketClose);
             return new VectorNode(CalcPos(bracketOpen), int.Parse(x.Value), int.Parse(y.Value));
         }
 
         protected ValueNode ParseValue()
         {
-            var token = Expect(TokenType.Identifier, TokenType.Integer, TokenType.TupleBracketOpen);
-            if (token.Type == TokenType.Integer)
-                return new NumericNode(CalcPos(token), int.Parse(token.Value));
+            var token = Expect(TokenType.Identifier, TokenType.Number, TokenType.TupleBracketOpen);
+            if (token.Type == TokenType.Number)
+                return new NumericNode(CalcPos(token), double.Parse(token.Value));
             else if (token.Type == TokenType.TupleBracketOpen)
             {
                 PushBack(token);
@@ -119,23 +119,30 @@ namespace Aura.Script
             var left = ParseValue();
             var op = ParseComparisonOp();
             var right = ParseValue();
-            Expect(TokenType.ExprBracketClose);
-            return new ComparisonNode(CalcPos(bracketOpen), left, right, op);
+            var bracketClose = Expect(TokenType.ExprBracketClose);
+            return new ComparisonNode(CalcPos(bracketOpen, bracketClose), left, right, op);
         }
 
-        protected LogicalOp ParseLogicalOp()
+        protected LogicalOp? OptParseLogicalOp()
         {
-            var token = Expect(TokenType.LogicalAnd, TokenType.LogicalOr);
-            return token.Type == TokenType.LogicalAnd ? LogicalOp.And : LogicalOp.Or;
+            var token = ContinueWith(TokenType.LogicalAnd, TokenType.LogicalOr);
+            if (token == null)
+                return null;
+            return token.Value.Type == TokenType.LogicalAnd ? LogicalOp.And : LogicalOp.Or;
         }
 
-        protected LogicalNode ParseLogical()
+        protected ConditionNode ParseLogical()
         {
             var bracketOpen = Expect(TokenType.ExprBracketOpen);
             var left = ParseCondition();
-            var op = ParseLogicalOp();
+            var op = OptParseLogicalOp();
+            if (op == null)
+            {
+                Expect(TokenType.ExprBracketClose);
+                return left;
+            }
             var right = ParseCondition();
-            var logical = new LogicalNode(CalcPos(bracketOpen), left, right, op);
+            var logical = new LogicalNode(CalcPos(bracketOpen), left, right, op.Value);
 
             while(true)
             {
@@ -144,9 +151,11 @@ namespace Aura.Script
                     return logical;
 
                 PushBack(token);
-                op = ParseLogicalOp();
+                op = OptParseLogicalOp();
+                if (op == null)
+                    throw new Exception($"{token.Pos}: Expected logical operator");
                 right = ParseCondition();
-                logical = new LogicalNode(CalcPos(bracketOpen), logical, right, op);
+                logical = new LogicalNode(CalcPos(bracketOpen), logical, right, op.Value);
             }
         }
 
@@ -203,10 +212,24 @@ namespace Aura.Script
             return new AssignmentNode(CalcPos(variableIdentifier), variable, value);
         }
 
+        protected AssignmentNode ParseSetAssignment()
+        {
+            var setIdentifier = Expect(TokenType.Identifier);
+            Expect(TokenType.TupleBracketOpen);
+            var variableIdentifier = Expect(TokenType.Identifier);
+            Expect(TokenType.TupleBracketClose);
+            Expect(TokenType.Assign);
+            var value = ParseValue();
+            Expect(TokenType.Semicolon);
+            var variable = new VariableNode(CalcPos(setIdentifier.Pos, value.Position), setIdentifier.Value, variableIdentifier.Value);
+            return new AssignmentNode(CalcPos(setIdentifier), variable, value);
+        }
+
         protected IfNode ParseIf()
         {
             var ifKeyword = Expect(TokenType.Identifier);
             var condition = ParseCondition();
+            scanner.SkipToNextLine(); // DAMN YOU Aura and your inconsistency D:<
             var thenBlock = ParseInstructionBlock();
 
             var elseToken = ContinueWith(TokenType.Identifier);
@@ -243,6 +266,8 @@ namespace Aura.Script
                 return ParseFunctionCall();
             else if (next.Type == TokenType.Assign)
                 return ParseAssignment();
+            else if (next.Type == TokenType.TupleBracketOpen)
+                return ParseSetAssignment();
             else
                 throw new Exception($"{next.Pos}: Unexpected {next.Type}, expected one of ExprBracketOpen, Assign");
         }

@@ -20,6 +20,7 @@ namespace Aura
 
         public LoadSceneContext(IBackend backend, string sceneName)
         {
+            sceneName = sceneName.StartsWith(".\\") ? sceneName.Substring(2) : sceneName;
             Backend = backend;
             SceneName = sceneName;
             ScenePath = $"Scenes/{sceneName}/";

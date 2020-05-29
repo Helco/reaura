@@ -47,6 +47,18 @@ namespace Aura.Script
             {
                 csharp = typeof(int),
                 aura = typeof(NumericNode),
+                mapper = node => (int)((NumericNode)node).Value
+            },
+            new ArgumentMapping
+            {
+                csharp = typeof(float),
+                aura = typeof(NumericNode),
+                mapper = node => (float)((NumericNode)node).Value
+            },
+            new ArgumentMapping
+            {
+                csharp = typeof(double),
+                aura = typeof(NumericNode),
                 mapper = node => ((NumericNode)node).Value
             },
             new ArgumentMapping

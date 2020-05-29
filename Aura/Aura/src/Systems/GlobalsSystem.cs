@@ -44,7 +44,7 @@ namespace Aura.Systems
                     throw new InvalidDataException($"{node.Position}: Duplicate default value \"{name}\"");
 
                 if (node.Value is NumericNode)
-                    defaultValues.Add(name, ((NumericNode)node.Value).Value);
+                    defaultValues.Add(name, (int)((NumericNode)node.Value).Value);
                 else if (node.Value is StringNode)
                 {
                     var constantName = ((StringNode)node.Value).Value;

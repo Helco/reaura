@@ -234,9 +234,9 @@ namespace Aura.Script
 
     public class NumericNode : ValueNode
     {
-        public int Value { get; }
+        public double Value { get; }
 
-        public NumericNode(ScriptPos pos, int value) : base(pos)
+        public NumericNode(ScriptPos pos, double value) : base(pos)
         {
             Value = value;
         }

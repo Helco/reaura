@@ -5,7 +5,7 @@ namespace Aura.Script
     public enum TokenType
     {
         Identifier,
-        Integer,
+        Number,
 
         BlockBracketOpen,
         BlockBracketClose,
