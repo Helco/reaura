@@ -104,7 +104,7 @@ namespace Aura.Systems
         public void OnWorldClick(Vector2 pos)
         {
             // let's find some weird places in Aura with Single
-            var cell = cells.Values.SingleOrDefault(c => c.IsPointInside(pos));
+            var cell = cells.Values.SingleOrDefault(c => c.IsActive && c.IsPointInside(pos));
             if (cell == null || interpreter == null)
                 return;
             interpreter.Execute(cell.Action);
