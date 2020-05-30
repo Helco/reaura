@@ -128,8 +128,9 @@ namespace Aura.Veldrid
         private readonly float sectionSize = AuraMath.MaxAuraAngle.X / 60.0f;
         public void OnAfterSceneChange()
         {
-            if (worldRendererSystem == null || cellSystem == null)
-                return;
+            var wr = (IVeldridWorldRenderer?)worldRendererSystem?.WorldRenderer;
+            if (wr == null || cellSystem == null)
+                throw new InvalidProgramException("WorldRendererSystem has no renderer initialized after scene change");
             vertexBuffer?.Dispose();
             isActiveBuffer?.Dispose();
             indexBuffer?.Dispose();
@@ -137,6 +138,12 @@ namespace Aura.Veldrid
             var vertices = Enumerable.Empty<Vertex>();
             var indices = Enumerable.Empty<ushort>();
             int cellI = 0;
+            Func<Vector2, Vector3> positionTransform = wr switch
+            {
+                _ when wr is IPuzzleWorldRenderer => a => new Vector3(a.X / 400.0f - 1, 1 - a.Y / 250.0f, 1.0f), // TODO: Replace constants
+                _ when wr is IPanoramaWorldRenderer => AuraMath.AuraOnSphere,
+                var _ => throw new NotSupportedException("WorldRendererType is not supported for DebugCellSystem")
+            };
             
             foreach (var cell in cellSystem.Cells)
             {
@@ -156,7 +163,7 @@ namespace Aura.Veldrid
                             var auraPos = cell.UpperLeft + x * right + y * down;
                             return new Vertex()
                             {
-                                pos = AuraMath.AuraOnSphere(auraPos),
+                                pos = positionTransform(auraPos),
                                 uv = AuraMath.DistanceToBorder(auraPos, cell.UpperLeft, cell.UpperLeft + cell.Size), // unnormalized lowerright
                                 cellIndex = thisCellI
                             };
@@ -192,9 +199,6 @@ namespace Aura.Veldrid
             uniforms.inactiveColor = RgbaFloat.Orange.WithAlpha(0.2f);
             uniforms.selectedColor = RgbaFloat.Red.WithAlpha(0.2f);
             uniforms.selected = -1;
-            var wr = (IVeldridWorldRenderer?)worldRendererSystem.WorldRenderer;
-            if (wr == null)
-                throw new InvalidProgramException("WorldRendererSystem has no renderer initialized after scene change");
             uniforms.projection = wr.ProjectionMatrix;
             uniforms.view = wr.ViewMatrix;
 

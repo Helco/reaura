@@ -49,12 +49,18 @@ namespace Aura
         Vector2 ViewRotation { get; set; }
     }
 
+    public interface IPuzzleWorldRenderer : IWorldRenderer
+    {
+        void LoadBackground(Stream stream);
+    }
+
     public interface IBackend
     {
         Stream? OpenAssetFile(string resourceName);
         ITexture CreateImage(Stream stream);
         IVideoTexture CreateVideo(Stream stream);
-        IPanoramaWorldRenderer CreatePanorama(Stream stream, int spriteCapacity);
+        IPanoramaWorldRenderer CreatePanoramaRenderer(Stream stream, int spriteCapacity);
+        IPuzzleWorldRenderer CreatePuzzleRenderer(int spriteCapacity);
 
         Vector2 CursorPosition { get; set; }
         event Action<Vector2> OnClick;

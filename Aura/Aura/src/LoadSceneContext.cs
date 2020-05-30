@@ -6,6 +6,12 @@ using Aura.Script;
 
 namespace Aura
 {
+    public enum SceneType
+    {
+        Panorama,
+        Puzzle
+    }
+
     public class LoadSceneContext
     {
         private Dictionary<string, Stream> sceneAssets = new Dictionary<string, Stream>();
@@ -13,17 +19,19 @@ namespace Aura
         public IBackend Backend { get; }
         public string ScenePath { get; }
         public string SceneName { get; }
+        public SceneType Type { get; }
         public SceneNode Scene { get; }
         public IReadOnlyDictionary<string, string> ScriptTexts { get; } = new Dictionary<string, string>();
         public IReadOnlyDictionary<string, Stream> SceneAssets => sceneAssets;
         public Queue<IWorldSprite> AvailableWorldSprites { get; set; } = new Queue<IWorldSprite>();
 
-        public LoadSceneContext(IBackend backend, string sceneName)
+        public LoadSceneContext(IBackend backend, string sceneName, SceneType type)
         {
             sceneName = sceneName.StartsWith(".\\") ? sceneName.Substring(2) : sceneName;
             Backend = backend;
             SceneName = sceneName;
             ScenePath = $"Scenes/{sceneName}/";
+            Type = type;
 
             AddAssetPack($"{ScenePath}{sceneName}.psp");
             AddAssetPack($"{ScenePath}{sceneName}.pvd");

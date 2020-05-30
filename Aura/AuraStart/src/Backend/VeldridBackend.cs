@@ -115,10 +115,17 @@ namespace Aura.Veldrid
         public IVideoTexture CreateVideo(Stream stream) =>
             VideoTextureSet.CreateFromStream(stream);
 
-        public IPanoramaWorldRenderer CreatePanorama(Stream stream, int spriteCapacity)
+        public IPanoramaWorldRenderer CreatePanoramaRenderer(Stream stream, int spriteCapacity)
         {
             var worldRenderer = new PanoramaWorldRenderer(spriteCapacity, SpriteRendererCommon, Device.SwapchainFramebuffer);
             worldRenderer.WorldTexture = ImageLoader.LoadCubemap(stream, Device);
+            worldRenderer.WorldRendererSet = WorldRendererSet;
+            return worldRenderer;
+        }
+
+        public IPuzzleWorldRenderer CreatePuzzleRenderer(int spriteCapacity)
+        {
+            var worldRenderer = new PuzzleWorldRenderer(spriteCapacity, SpriteRendererCommon, Device.SwapchainFramebuffer);
             worldRenderer.WorldRendererSet = WorldRendererSet;
             return worldRenderer;
         }

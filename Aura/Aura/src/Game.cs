@@ -8,7 +8,7 @@ using Aura.Systems;
 
 namespace Aura
 {
-    public partial class Game : BaseDisposable, IGameSystemContainer
+    public class Game : BaseDisposable, IGameSystemContainer
     {
         private IBackend Backend { get; }
         private IGameSystem[] systems;
@@ -39,8 +39,9 @@ namespace Aura
                 fSystem.RegisterGameFunctions(gameInterpreter);
             gameInterpreter.RegisterFunction<string, int, int>("LoadSceneTransfuse", ScrLoadSceneTransfuse);
             gameInterpreter.RegisterFunction<string, int, int>("LoadScene", ScrLoadSceneTransfuse);
+            gameInterpreter.RegisterFunction<string>("LoadPuzzleTransfuse", ScrLoadPuzzleTransfuse);
 
-            LoadScene("004");
+            LoadScene("Puzzle_Box", SceneType.Puzzle);
         }
 
         protected override void DisposeManaged()
@@ -57,14 +58,19 @@ namespace Aura
 
         private void ScrLoadSceneTransfuse(string sceneName, int startPosX, int startPosY)
         {
-            LoadScene(sceneName);
+            LoadScene(sceneName, SceneType.Panorama);
             SystemsWith<GameWorldRendererSystem>().Single().WorldRenderer?.SetViewAt(new Vector2(startPosX, startPosY));
         }
 
-        private void LoadScene(string sceneName)
+        private void ScrLoadPuzzleTransfuse(string puzzleName)
+        {
+            LoadScene(puzzleName, SceneType.Puzzle);
+        }
+
+        private void LoadScene(string sceneName, SceneType type)
         {
             Console.WriteLine($"Loading scene \"{sceneName}\"");
-            var context = new LoadSceneContext(Backend, sceneName);
+            var context = new LoadSceneContext(Backend, sceneName, type);
             foreach (var evSystem in Systems)
                 evSystem.OnBeforeSceneChange(context);
 
