@@ -19,7 +19,7 @@ namespace Aura.Veldrid
         static void Main(string[] args)
         {
             ffmpeg.RootPath = @"C:\dev\aura\ffmpeg";
-            FFmpegHelpers.SetupLoggingToConsole();
+            //FFmpegHelpers.SetupLoggingToConsole();
 
             var window = VeldridStartup.CreateWindow(new WindowCreateInfo
             {
