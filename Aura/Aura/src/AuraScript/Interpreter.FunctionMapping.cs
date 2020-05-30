@@ -4,9 +4,21 @@ using System.IO;
 using System.Linq;
 using System.Numerics;
 using System.Reflection;
+using System.Text.RegularExpressions;
 
 namespace Aura.Script
 {
+    [AttributeUsage(AttributeTargets.Method, AllowMultiple = true)]
+    public class ScriptFunctionAttribute : Attribute
+    {
+        public string? AuraName { get; }
+
+        public ScriptFunctionAttribute(string? auraName = null)
+        {
+            AuraName = auraName;
+        }
+    }
+
     public partial class Interpreter
     {
         private struct ArgumentMapping
@@ -148,6 +160,19 @@ namespace Aura.Script
                 return argMap.mapper(auraArg);
             }).ToArray();
             map.method.Invoke(map.thiz, args);
+        }
+
+        private static readonly Regex FunctionPrefix = new Regex(@"^Scr");
+        public void RegisterAllFunctionsIn(object target)
+        {
+            var type = target.GetType();
+            var methods = type.GetMethods(BindingFlags.Instance | BindingFlags.NonPublic | BindingFlags.Public);
+            foreach (var method in methods)
+            {
+                var scriptFunctions = method.GetCustomAttributes<ScriptFunctionAttribute>();
+                foreach (var scriptFunction in scriptFunctions)
+                    RegisterFunction(scriptFunction.AuraName ?? FunctionPrefix.Replace(method.Name, ""), target, method);
+            }
         }
 
         public void RegisterFunction(string auraName, Action method) => RegisterFunction(auraName, method.Target, method.Method);

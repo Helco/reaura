@@ -36,10 +36,11 @@ namespace Aura
             foreach (var vsSystem in SystemsWith<IGameVariableSet>())
                 gameInterpreter.RegisterVariableSet(vsSystem.VariableSetName, vsSystem);
             foreach (var fSystem in Systems)
+            {
+                gameInterpreter.RegisterAllFunctionsIn(fSystem);
                 fSystem.RegisterGameFunctions(gameInterpreter);
-            gameInterpreter.RegisterFunction<string, int, int>("LoadSceneTransfuse", ScrLoadSceneTransfuse);
-            gameInterpreter.RegisterFunction<string, int, int>("LoadScene", ScrLoadSceneTransfuse);
-            gameInterpreter.RegisterFunction<string>("LoadPuzzleTransfuse", ScrLoadPuzzleTransfuse);
+            }
+            gameInterpreter.RegisterAllFunctionsIn(this);
 
             LoadScene("Puzzle_Box", SceneType.Puzzle);
         }
@@ -56,12 +57,15 @@ namespace Aura
                 ptSystem.Update(timeDelta);
         }
 
+        [ScriptFunction]
+        [ScriptFunction("LoadScene")]
         private void ScrLoadSceneTransfuse(string sceneName, int startPosX, int startPosY)
         {
             LoadScene(sceneName, SceneType.Panorama);
             SystemsWith<GameWorldRendererSystem>().Single().WorldRenderer?.SetViewAt(new Vector2(startPosX, startPosY));
         }
 
+        [ScriptFunction]
         private void ScrLoadPuzzleTransfuse(string puzzleName)
         {
             LoadScene(puzzleName, SceneType.Puzzle);

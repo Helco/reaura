@@ -43,13 +43,9 @@ namespace Aura.Systems
             context.AvailableWorldSprites = new Queue<IWorldSprite>(WorldRenderer.Sprites);
         }
 
-        public void RegisterGameFunctions(Interpreter interpreter)
-        {
-            interpreter.RegisterFunction<string>("Load_Fon", ScrLoad_Fon);
-        }
-
         public void Update(float timeDelta) => lastTimeDelta = timeDelta;
 
+        [ScriptFunction]
         private void ScrLoad_Fon(string fonName)
         {
             if (!IsPuzzle || WorldRenderer == null)
