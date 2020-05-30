@@ -16,7 +16,8 @@ namespace Aura.Veldrid
         {
             Elements = new ResourceLayoutElementDescription[]
             {
-                new ResourceLayoutElementDescription("UniformBlock", ResourceKind.UniformBuffer, ShaderStages.Vertex | ShaderStages.Fragment)
+                new ResourceLayoutElementDescription("UniformBlock", ResourceKind.UniformBuffer, ShaderStages.Vertex | ShaderStages.Fragment),
+                new ResourceLayoutElementDescription("IsActiveBuffer", ResourceKind.StructuredBufferReadOnly, ShaderStages.Vertex)
             }
         };
 
@@ -44,12 +45,13 @@ namespace Aura.Veldrid
             public Matrix4x4 projection;
             public Matrix4x4 view;
             public RgbaFloat color;
+            public RgbaFloat inactiveColor;
             public RgbaFloat selectedColor;
             public float borderWidth;
             public float borderAlpha;
             public int selected;
 
-            public const uint SizeInBytes = (4 * 4 * 2 + 4 * 2 + 2) * sizeof(float) + sizeof(int);
+            public const uint SizeInBytes = (4 * 4 * 2 + 4 * 3 + 2) * sizeof(float) + sizeof(int);
             public const uint AlignedSizeInBytes = (SizeInBytes + 15) / 16 * 16;
         }
 
@@ -57,15 +59,18 @@ namespace Aura.Veldrid
         private GameWorldRendererSystem? worldRendererSystem;
         private CellSystem? cellSystem;
         private DeviceBuffer? vertexBuffer;
+        private DeviceBuffer? isActiveBuffer;
         private DeviceBuffer? indexBuffer;
         private DeviceBuffer uniformBuffer;
         private ResourceLayout resourceLayout;
-        private ResourceSet resourceSet;
+        private ResourceSet? resourceSet;
         private Shader[] shaders;
         private Pipeline pipeline;
         private Uniforms uniforms;
         private Viewport viewport;
         private int indexCount = 0;
+        private int[] lastIsActive = Array.Empty<int>();
+        private bool needIsActiveUpdate = true;
 
         private bool ReadyToRender =>
             worldRendererSystem != null &&
@@ -79,7 +84,6 @@ namespace Aura.Veldrid
             this.backend = backend;
             resourceLayout = backend.Factory.CreateResourceLayout(resourceLayoutDescr);
             uniformBuffer = backend.Factory.CreateBuffer(new BufferDescription(Uniforms.AlignedSizeInBytes, BufferUsage.UniformBuffer));
-            resourceSet = backend.Factory.CreateResourceSet(new ResourceSetDescription(resourceLayout, uniformBuffer));
             shaders = backend.Factory.LoadShadersFromFiles("debugcell");
             var pipelineDescr = new GraphicsPipelineDescription(
                 BlendStateDescription.SingleAlphaBlend,
@@ -98,10 +102,11 @@ namespace Aura.Veldrid
         protected override void DisposeManaged()
         {
             vertexBuffer?.Dispose();
+            isActiveBuffer?.Dispose();
             indexBuffer?.Dispose();
             uniformBuffer.Dispose();
             resourceLayout.Dispose();
-            resourceSet.Dispose();
+            resourceSet?.Dispose();
             foreach (var shader in shaders)
                 shader.Dispose();
             pipeline.Dispose();
@@ -126,13 +131,16 @@ namespace Aura.Veldrid
             if (worldRendererSystem == null || cellSystem == null)
                 return;
             vertexBuffer?.Dispose();
+            isActiveBuffer?.Dispose();
             indexBuffer?.Dispose();
+            resourceSet?.Dispose();
             var vertices = Enumerable.Empty<Vertex>();
             var indices = Enumerable.Empty<ushort>();
             int cellI = 0;
             
             foreach (var cell in cellSystem.Cells)
             {
+                int thisCellI = cellI;
                 int basebaseI = vertices.Count();
                 int sectionsX = (int)Math.Ceiling(cell.Size.X / sectionSize);
                 int sectionsY = (int)Math.Ceiling(cell.Size.Y / sectionSize);
@@ -150,7 +158,7 @@ namespace Aura.Veldrid
                             {
                                 pos = AuraMath.AuraOnSphere(auraPos),
                                 uv = AuraMath.DistanceToBorder(auraPos, cell.UpperLeft, cell.UpperLeft + cell.Size), // unnormalized lowerright
-                                cellIndex = cellI
+                                cellIndex = thisCellI
                             };
                         })
                     ));
@@ -181,6 +189,7 @@ namespace Aura.Veldrid
             uniforms.borderWidth = 1.0f;
             uniforms.borderAlpha = 0.7f;
             uniforms.color = RgbaFloat.Yellow.WithAlpha(0.2f);
+            uniforms.inactiveColor = RgbaFloat.Orange.WithAlpha(0.2f);
             uniforms.selectedColor = RgbaFloat.Red.WithAlpha(0.2f);
             uniforms.selected = -1;
             var wr = (IVeldridWorldRenderer?)worldRendererSystem.WorldRenderer;
@@ -188,6 +197,13 @@ namespace Aura.Veldrid
                 throw new InvalidProgramException("WorldRendererSystem has no renderer initialized after scene change");
             uniforms.projection = wr.ProjectionMatrix;
             uniforms.view = wr.ViewMatrix;
+
+            lastIsActive = new int[cellSystem.Cells.Count()];
+            UpdateIsActive();
+            isActiveBuffer = backend.Factory.CreateBuffer(new BufferDescription((uint)(lastIsActive.Length * sizeof(int)), BufferUsage.StructuredBufferReadOnly, sizeof(int)));
+            backend.Device.UpdateBuffer(isActiveBuffer, 0, lastIsActive);
+            needIsActiveUpdate = false;
+            resourceSet = backend.Factory.CreateResourceSet(new ResourceSetDescription(resourceLayout, uniformBuffer, isActiveBuffer));
         }
 
         public IEnumerable<Fence> RenderPrePasses()
@@ -201,7 +217,24 @@ namespace Aura.Veldrid
                     wr.ViewportSize.X, wr.ViewportSize.Y,
                     -10.0f, 10.0f);
             }
+            UpdateIsActive();
             return Enumerable.Empty<Fence>();
+        }
+
+        private void UpdateIsActive()
+        {
+            if (cellSystem == null || isActiveBuffer == null)
+                return;
+            int i = 0;
+            foreach (var cell in cellSystem.Cells)
+            {
+                if (lastIsActive[i] != (cell.IsActive ? 1 : 0))
+                {
+                    lastIsActive[i] = cell.IsActive ? 1 : 0;
+                    needIsActiveUpdate = true;
+                }
+                i++;
+            }
         }
 
         public void RenderMainPass(CommandList commandList)
@@ -213,6 +246,11 @@ namespace Aura.Veldrid
             commandList.SetViewport(0, viewport);
             commandList.SetPipeline(pipeline);
             commandList.SetVertexBuffer(0, vertexBuffer);
+            if (needIsActiveUpdate)
+            {
+                needIsActiveUpdate = false;
+                commandList.UpdateBuffer(isActiveBuffer, 0, lastIsActive);
+            }
             commandList.SetIndexBuffer(indexBuffer, IndexFormat.UInt16);
             commandList.SetGraphicsResourceSet(0, resourceSet);
             commandList.UpdateBuffer(uniformBuffer, 0, ref uniforms);

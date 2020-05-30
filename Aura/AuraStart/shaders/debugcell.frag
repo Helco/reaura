@@ -10,6 +10,7 @@ layout(set = 0, binding = 0) uniform UniformBlock
 	mat4 projection;
 	mat4 view;
 	vec4 color;
+	vec4 inactiveColor;
 	vec4 selectedColor;
 	float borderWidth;
 	float borderAlpha;
