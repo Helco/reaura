@@ -45,6 +45,13 @@ namespace Aura.Script
             },
             new ArgumentMapping
             {
+                // just a path without prefix
+                csharp = typeof(string),
+                aura = typeof(VariableNode),
+                mapper = node => $"{((VariableNode)node).Set}.{((VariableNode)node).Name}"
+            },
+            new ArgumentMapping
+            {
                 csharp = typeof(int),
                 aura = typeof(NumericNode),
                 mapper = node => (int)((NumericNode)node).Value
