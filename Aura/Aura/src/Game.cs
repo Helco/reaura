@@ -38,8 +38,9 @@ namespace Aura
             foreach (var fSystem in Systems)
                 fSystem.RegisterGameFunctions(gameInterpreter);
             gameInterpreter.RegisterFunction<string, int, int>("LoadSceneTransfuse", ScrLoadSceneTransfuse);
+            gameInterpreter.RegisterFunction<string, int, int>("LoadScene", ScrLoadSceneTransfuse);
 
-            LoadScene("008");
+            LoadScene("004");
         }
 
         protected override void DisposeManaged()
@@ -62,6 +63,7 @@ namespace Aura
 
         private void LoadScene(string sceneName)
         {
+            Console.WriteLine($"Loading scene \"{sceneName}\"");
             var context = new LoadSceneContext(Backend, sceneName);
             foreach (var evSystem in Systems)
                 evSystem.OnBeforeSceneChange(context);

@@ -80,7 +80,7 @@ namespace Aura.Script
                 {
                     if (char.IsWhiteSpace((char)ch))
                         Read();
-                    else if (ch == '*' || ch == '/')
+                    else if (ch == '*' || ch == '/' || ch == '?')
                         SkipToNextLine();
                     else
                         return;
