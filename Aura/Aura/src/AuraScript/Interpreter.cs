@@ -2,6 +2,8 @@
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
+using System.Threading;
+using System.Threading.Tasks;
 
 namespace Aura.Script
 {
@@ -20,12 +22,11 @@ namespace Aura.Script
             { "NOACTIVE", 0 }
         };
 
-        // Unfortunately this member means that the Interpreter is *not* thread-safe, but it is the most unintrusive way...
-        private bool shouldBeExiting = false;
         private Dictionary<string, IVariableSet> variableSets = new Dictionary<string, IVariableSet>();
 
         public Interpreter()
         {
+            taskFactory = new TaskFactory(taskScheduler);
             RegisterArgumentMapper(typeof(int), typeof(string), v =>
             {
                 var stringNode = (StringNode)v;
@@ -107,42 +108,49 @@ namespace Aura.Script
             return value;
         }
 
-        public void Execute(InstructionBlockNode block)
+        private async Task Execute(InstructionBlockNode block, CancellationToken? token = null)
         {
-            shouldBeExiting = false;
+            token ??= CancellationToken.None;
             foreach (var instruction in block.Instructions)
             {
-                Execute(instruction);
-                if (shouldBeExiting)
+                if (token.Value.IsCancellationRequested)
                     return;
+                await Execute(instruction, token);
             }
         }
 
-        public void Execute(InstructionNode instruction)
+        private Task Execute(InstructionNode instruction, CancellationToken? token = null) => instruction switch
         {
-            if (instruction is AssignmentNode) Execute((AssignmentNode)instruction);
-            else if (instruction is FunctionCallNode) Execute((FunctionCallNode)instruction);
-            else if (instruction is ReturnNode) Execute((ReturnNode)instruction);
-            else if (instruction is IfNode) Execute((IfNode)instruction);
-            else throw new InvalidDataException("Unknown instruction node");
-        }
+            _ when instruction is AssignmentNode => Execute((AssignmentNode)instruction),
+            _ when instruction is FunctionCallNode => Execute((FunctionCallNode)instruction),
+            _ when instruction is ReturnNode => Execute((ReturnNode)instruction),
+            _ when instruction is IfNode => Execute((IfNode)instruction, token),
+            var _ => throw new NotImplementedException("Unimplemented instruction node")
+        };
 
-        public void Execute(AssignmentNode assignment)
+        private Task Execute(AssignmentNode assignment)
         {
             if (!variableSets.TryGetValue(assignment.Target.Set, out var variableSet))
                 throw new InvalidDataException($"Unknown variable set {assignment.Target.Set}");
             variableSet[assignment.Target.Name] = Evaluate(assignment.Value);
+            return Task.CompletedTask;
         }
 
-        public void Execute(ReturnNode _) => shouldBeExiting = true;
+        private Task Execute(ReturnNode _)
+        {
+            cts?.Cancel();
+            return Task.CompletedTask;
+        }
         
-        public void Execute(IfNode @if)
+        private Task Execute(IfNode @if, CancellationToken? token = null)
         { 
             bool condition = Evaluate(@if.Condition);
             if (condition)
-                Execute(@if.Then);
+                return Execute(@if.Then, token);
             else if (@if.Else != null)
-                Execute(@if.Else);
+                return Execute(@if.Else, token);
+            else
+                return Task.CompletedTask;
         }
     }
 }

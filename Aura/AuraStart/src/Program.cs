@@ -20,6 +20,10 @@ namespace Aura.Veldrid
         {
             ffmpeg.RootPath = @"C:\dev\aura\ffmpeg";
             //FFmpegHelpers.SetupLoggingToConsole();
+            TaskScheduler.UnobservedTaskException += (a, b) =>
+            {
+                throw b.Exception!;
+            };
 
             var window = VeldridStartup.CreateWindow(new WindowCreateInfo
             {

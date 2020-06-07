@@ -107,7 +107,7 @@ namespace Aura.Systems
             var cell = cells.Values.SingleOrDefault(c => c.IsActive && c.IsPointInside(pos));
             if (cell == null || interpreter == null)
                 return;
-            interpreter.Execute(cell.Action);
+            interpreter.ExecuteSync(cell.Action);
         }
 
         public void RegisterGameFunctions(Interpreter interpreter)

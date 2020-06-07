@@ -13,6 +13,7 @@ namespace Aura
         private IBackend Backend { get; }
         private IGameSystem[] systems;
         private Interpreter gameInterpreter;
+        private Action? onNextUpdate = null;
 
         public IReadOnlyCollection<IGameSystem> Systems => systems;
         public IEnumerable<T> SystemsWith<T>() where T : IGameSystem => systems.OfType<T>();
@@ -42,7 +43,7 @@ namespace Aura
             }
             gameInterpreter.RegisterAllFunctionsIn(this);
 
-            LoadScene("Puzzle_Box", SceneType.Puzzle);
+            LoadScene("010", SceneType.Panorama);
         }
 
         protected override void DisposeManaged()
@@ -55,20 +56,30 @@ namespace Aura
         {
             foreach (var ptSystem in Systems)
                 ptSystem.Update(timeDelta);
+            onNextUpdate?.Invoke();
+            onNextUpdate = null;
         }
 
         [ScriptFunction]
         [ScriptFunction("LoadScene")]
         private void ScrLoadSceneTransfuse(string sceneName, int startPosX, int startPosY)
         {
-            LoadScene(sceneName, SceneType.Panorama);
-            SystemsWith<GameWorldRendererSystem>().Single().WorldRenderer?.SetViewAt(new Vector2(startPosX, startPosY));
+            onNextUpdate += () =>
+            {
+                LoadScene(sceneName, SceneType.Panorama);
+                SystemsWith<GameWorldRendererSystem>().Single().WorldRenderer?.SetViewAt(new Vector2(startPosX, startPosY));
+            };
+            gameInterpreter.CancelCurrentExecution();
         }
 
         [ScriptFunction]
         private void ScrLoadPuzzleTransfuse(string puzzleName)
         {
-            LoadScene(puzzleName, SceneType.Puzzle);
+            onNextUpdate += () =>
+            {
+                LoadScene(puzzleName, SceneType.Puzzle);
+            };
+            gameInterpreter.CancelCurrentExecution();
         }
 
         private void LoadScene(string sceneName, SceneType type)
@@ -94,7 +105,7 @@ namespace Aura
                 glSystem.RegisterLoadFunctions(context, curGLInterpreter);
                 glSystem.GraphicCount = graphicList.Graphics.Count;
                 foreach (var graphic in graphicList.Graphics.Values)
-                    curGLInterpreter.Execute(graphic.Value);
+                    curGLInterpreter.ExecuteSync(graphic.Value);
             }
 
             var objectListSystems = SystemsWith<IObjectListSystem>();
@@ -113,7 +124,7 @@ namespace Aura
             foreach (var evSystem in Systems)
                 evSystem.OnAfterSceneChange();
             if (context.Scene.Events.TryGetValue("@OnLoadScene", out var onLoadEvent))
-                gameInterpreter.Execute(onLoadEvent.Action);
+                gameInterpreter.ExecuteSync(onLoadEvent.Action);
         }
     }
 }

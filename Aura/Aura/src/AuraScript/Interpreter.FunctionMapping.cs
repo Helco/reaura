@@ -5,11 +5,12 @@ using System.Linq;
 using System.Numerics;
 using System.Reflection;
 using System.Text.RegularExpressions;
+using System.Threading.Tasks;
 
 namespace Aura.Script
 {
     [AttributeUsage(AttributeTargets.Method, AllowMultiple = true)]
-    public class ScriptFunctionAttribute : Attribute
+    public sealed class ScriptFunctionAttribute : Attribute
     {
         public string? AuraName { get; }
 
@@ -35,6 +36,7 @@ namespace Aura.Script
             public object? thiz;
             public MethodInfo method;
             public ParameterInfo[] args;
+            public bool isAsync;
         }
 
         private static readonly IReadOnlyDictionary<string, CubeFace> CubeFaceNames = new Dictionary<string, CubeFace>()
@@ -135,15 +137,20 @@ namespace Aura.Script
         {
             if (functionMappings.ContainsKey(auraName))
                 throw new InvalidProgramException($"There already exists a function mapping for {auraName}");
+            bool isAsync = method.ReturnType != typeof(void);
+            if (isAsync && !typeof(Task).IsAssignableFrom(method.ReturnType))
+                throw new ArgumentException("Method has to return either void or Task");
+
             functionMappings.Add(auraName, new FunctionMapping
             {
                 thiz = thiz,
                 method = method,
-                args = method.GetParameters()
+                args = method.GetParameters(),
+                isAsync = isAsync
             });
         }
 
-        public void Execute(FunctionCallNode call)
+        private Task Execute(FunctionCallNode call)
         {
             if (!functionMappings.TryGetValue(call.Function, out var map))
                 throw new InvalidDataException($"Unknown function {call.Function}");
@@ -159,7 +166,14 @@ namespace Aura.Script
                     throw new InvalidDataException($"Unknown argument mapping {argMap}");
                 return argMap.mapper(auraArg);
             }).ToArray();
-            map.method.Invoke(map.thiz, args);
+
+            if (map.isAsync)
+                return taskFactory.StartNew(async () => await (Task)map.method.Invoke(map.thiz, args)!);
+            else
+            {
+                map.method.Invoke(map.thiz, args);
+                return Task.CompletedTask;
+            }
         }
 
         private static readonly Regex FunctionPrefix = new Regex(@"^Scr");
@@ -184,5 +198,14 @@ namespace Aura.Script
         public void RegisterFunction<T0, T1, T2, T3, T4, T5>(string auraName, Action<T0, T1, T2, T3, T4, T5> method) => RegisterFunction(auraName, method.Target, method.Method);
         public void RegisterFunction<T0, T1, T2, T3, T4, T5, T6>(string auraName, Action<T0, T1, T2, T3, T4, T5, T6> method) => RegisterFunction(auraName, method.Target, method.Method);
         public void RegisterFunction<T0, T1, T2, T3, T4, T5, T6, T7>(string auraName, Action<T0, T1, T2, T3, T4, T5, T6, T7> method) => RegisterFunction(auraName, method.Target, method.Method);
+        public void RegisterFunction(string auraName, Func<Task> method) => RegisterFunction(auraName, method.Target, method.Method);
+        public void RegisterFunction<T0>(string auraName, Func<T0, Task> method) => RegisterFunction(auraName, method.Target, method.Method);
+        public void RegisterFunction<T0, T1>(string auraName, Func<T0, T1, Task> method) => RegisterFunction(auraName, method.Target, method.Method);
+        public void RegisterFunction<T0, T1, T2>(string auraName, Func<T0, T1, T2, Task> method) => RegisterFunction(auraName, method.Target, method.Method);
+        public void RegisterFunction<T0, T1, T2, T3>(string auraName, Func<T0, T1, T2, T3, Task> method) => RegisterFunction(auraName, method.Target, method.Method);
+        public void RegisterFunction<T0, T1, T2, T3, T4>(string auraName, Func<T0, T1, T2, T3, T4, Task> method) => RegisterFunction(auraName, method.Target, method.Method);
+        public void RegisterFunction<T0, T1, T2, T3, T4, T5>(string auraName, Func<T0, T1, T2, T3, T4, T5, Task> method) => RegisterFunction(auraName, method.Target, method.Method);
+        public void RegisterFunction<T0, T1, T2, T3, T4, T5, T6>(string auraName, Func<T0, T1, T2, T3, T4, T5, T6, Task> method) => RegisterFunction(auraName, method.Target, method.Method);
+        public void RegisterFunction<T0, T1, T2, T3, T4, T5, T6, T7>(string auraName, Func<T0, T1, T2, T3, T4, T5, T6, T7, Task> method) => RegisterFunction(auraName, method.Target, method.Method);
     }
 }

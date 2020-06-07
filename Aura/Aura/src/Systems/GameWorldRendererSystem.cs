@@ -34,6 +34,7 @@ namespace Aura.Systems
             this.context = context;
             var graphicLists = context.Scene.EntityLists.Values.OfType<GraphicListNode>();
             int spriteCapacity = graphicLists.Sum(l => l.Graphics.Count);
+            WorldRenderer?.Dispose();
             WorldRenderer = context.Type switch
             {
                 SceneType.Panorama => context.Backend.CreatePanoramaRenderer(context.SceneAssets[$"{context.SceneName}.bik"], spriteCapacity),
