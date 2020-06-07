@@ -14,26 +14,20 @@ namespace Aura.Script
     
     public partial class Interpreter
     {
-        private static readonly IReadOnlyDictionary<string, int> Constants = new Dictionary<string, int>()
-        {
-            { "TRUE", 1 },
-            { "FALSE", 0 },
-            { "ACTIVE", 1 },
-            { "NOACTIVE", 0 }
-        };
 
         private Dictionary<string, IVariableSet> variableSets = new Dictionary<string, IVariableSet>();
+        private Dictionary<string, Func<int>> globalValues = new Dictionary<string, Func<int>>()
+        {
+            { "TRUE", () => 1 },
+            { "FALSE", () => 0 },
+            { "ACTIVE", () => 1 },
+            { "NOACTIVE", () => 0 },
+        };
 
         public Interpreter()
         {
             taskFactory = new TaskFactory(taskScheduler);
-            RegisterArgumentMapper(typeof(int), typeof(string), v =>
-            {
-                var stringNode = (StringNode)v;
-                if (!Constants.TryGetValue(stringNode.Value, out int value))
-                    throw new InvalidDataException($"Unknown constant {stringNode.Value}");
-                return value;
-            });
+            RegisterArgumentMapper(typeof(int), typeof(string), v => Evaluate((StringNode)v));
         }
 
         public Interpreter Clone()
@@ -42,6 +36,7 @@ namespace Aura.Script
             clone.variableSets = variableSets.ToDictionary(p => p.Key, p => p.Value);
             clone.argumentMappings = argumentMappings.ToList();
             clone.functionMappings = functionMappings.ToDictionary(p => p.Key, p => p.Value);
+            clone.globalValues = globalValues.ToDictionary(p => p.Key, p => p.Value);
             return clone;
         }
 
@@ -50,6 +45,13 @@ namespace Aura.Script
             if (variableSets.ContainsKey(name))
                 throw new InvalidProgramException($"Variable set {name} is already registered");
             variableSets[name] = set;
+        }
+
+        public void RegisterGlobalValue(string name, Func<int> valueGetter)
+        {
+            if (globalValues.ContainsKey(name))
+                throw new InvalidOperationException($"Global value {name} is already registered");
+            globalValues[name] = valueGetter;
         }
 
         public bool Evaluate(ConditionNode condition)
@@ -101,11 +103,11 @@ namespace Aura.Script
             return variableSet[variable.Name];
         }
 
-        public int Evaluate(StringNode str)
+        public int Evaluate(StringNode stringNode)
         {
-            if (!Constants.TryGetValue(str.Value, out int value))
-                throw new InvalidDataException($"Unknown constant \"{str.Value}\"");
-            return value;
+            if (!globalValues.TryGetValue(stringNode.Value, out var valueGetter))
+                throw new InvalidDataException($"Unknown global value {stringNode.Value}");
+            return valueGetter();
         }
 
         private async Task Execute(InstructionBlockNode block, CancellationToken? token = null)
