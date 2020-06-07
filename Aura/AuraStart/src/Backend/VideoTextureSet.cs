@@ -60,10 +60,16 @@ namespace Aura.Veldrid
 
         public void Update(float timeDelta)
         {
+            foreach (var tex in textures)
+                tex.VideoPlayer.Update(timeDelta);
+        }
+
+        public void RenderAll()
+        {
             fence.Reset();
             commandList.Begin();
             foreach (var tex in textures)
-                tex.VideoPlayer.Update(timeDelta, commandList);
+                tex.VideoPlayer.Render(commandList);
             commandList.End();
             device.SubmitCommands(commandList, fence);
             device.WaitForFence(fence);

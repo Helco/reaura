@@ -67,6 +67,7 @@ namespace Aura.Veldrid
 
         public void Render()
         {
+            VideoTextureSet.RenderAll();
             WorldRendererSet.RenderAll();
         }
 

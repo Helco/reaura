@@ -12,8 +12,8 @@ namespace Aura.Veldrid
         private GraphicsDevice device;
         private Texture staging;
         private SwsContextPtr? sws;
+        private bool isTextureReady = false;
 
-        public CommandList? CommandList { get; set; } = null;
         public Texture Target { get; }
         public int Width => codecContext.Ptr->width;
         public int Height => codecContext.Ptr->height;
@@ -85,7 +85,16 @@ namespace Aura.Veldrid
 
         protected override void OnSwitchedFrames()
         {
-            CommandList?.CopyTexture(staging, Target);
+            isTextureReady = true;
+        }
+
+        public void Render(CommandList commandList)
+        {
+            if (isTextureReady)
+            {
+                isTextureReady = false;
+                commandList.CopyTexture(staging, Target);
+            }
         }
     }
 }

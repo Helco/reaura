@@ -123,6 +123,7 @@ namespace Aura.Veldrid
                 new IntPtr(me.convertedFrame.Ptr->data[0]), (uint)(me.Width * me.Height * 4),
                 0, 0, 0, (uint)me.Width, (uint)me.Height, 1, // area to update
                 0, 0); // mipmapLevel, arrayLevel
+            me.Dispose();
             return texture;
         }
 
@@ -154,6 +155,7 @@ namespace Aura.Veldrid
                     0, 0, 0, (uint)me.Width, (uint)me.Height, 1, // area to update
                     0, i); // mipmapLevel, arrayLevel
             }
+            me.Dispose();
             return texture;
         }
     }

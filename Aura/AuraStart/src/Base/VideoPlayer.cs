@@ -45,6 +45,7 @@ namespace Aura.Veldrid
             Duration = ConvertTimestamp(imageStream->duration, imageStream->time_base);
 
             ImageTrack.Reset();
+            ImageTrack.Update(); // send first frame to texture
             AudioTrack?.Reset();
         }
 
@@ -90,13 +91,12 @@ namespace Aura.Veldrid
             }
         }
 
-        public void Update(double deltaTime, CommandList commandList)
+        public void Update(double deltaTime)
         {
             if (!IsPlaying)
                 return;
             Time += Math.Min(deltaTime, 1.0 / ImageTrack.Framerate);
 
-            ImageTrack.CommandList = commandList;
             ImageTrack.Update();
             AudioTrack?.Update();
 
@@ -110,6 +110,11 @@ namespace Aura.Veldrid
                     AudioTrack?.Update();
                 }
             }
+        }
+
+        public void Render(CommandList commandList)
+        {
+            ImageTrack.Render(commandList);
         }
 
         public void Play() => IsPlaying = true;

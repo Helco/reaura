@@ -14,7 +14,12 @@ namespace Aura.Systems
         public int GraphicCount
         {
             get => sprites.Length;
-            set => sprites = new IWorldSprite[value];
+            set
+            {
+                foreach (IWorldSprite sprite in sprites)
+                    sprite.Texture?.Dispose();
+                sprites = new IWorldSprite[value];
+            }
         }
 
         protected override void DisposeManaged()
