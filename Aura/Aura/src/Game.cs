@@ -10,11 +10,11 @@ namespace Aura
 {
     public class Game : BaseDisposable, IGameSystemContainer
     {
-        private IBackend Backend { get; }
         private IGameSystem[] systems;
         private Interpreter gameInterpreter;
         private Action? onNextUpdate = null;
 
+        public IBackend Backend { get; }
         public IReadOnlyCollection<IGameSystem> Systems => systems;
         public IEnumerable<T> SystemsWith<T>() where T : IGameSystem => systems.OfType<T>();
 
@@ -30,6 +30,7 @@ namespace Aura
                 new SpriteSystem(),
                 new FonAnimateSystem(),
                 new CellSystem(),
+                new CursorSystem(),
                 new DummyScriptSystem()
             }.Concat(backendSystems).ToArray();
             foreach (var system in Systems)

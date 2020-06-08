@@ -14,6 +14,7 @@ namespace Aura.Systems
         public Vector2 UpperLeft { get; }
         public Vector2 LowerRight => AuraMath.NormalizeAura(UpperLeft + Size);
         public Vector2 Size { get; }
+        public CursorType? Cursor { get; }
         public InstructionBlockNode Action { get; }
 
         public Cell(string name, Vector2 upperLeft, Vector2 size, InstructionBlockNode action)
@@ -47,6 +48,7 @@ namespace Aura.Systems
         public string VariableSetName => "Cell";
 
         private Interpreter? interpreter;
+        private CursorSystem? cursorSystem;
         private Dictionary<string, Cell> cells = new Dictionary<string, Cell>();
 
         public IEnumerable<Cell> Cells => cells.Values;
@@ -65,6 +67,11 @@ namespace Aura.Systems
                     throw new ArgumentOutOfRangeException($"Unknown cell name {name}");
                 cell.IsActive = value != 0;
             }
+        }
+
+        public void CrossInitialize(IGameSystemContainer container)
+        {
+            cursorSystem = container.SystemsWith<CursorSystem>().Single();
         }
 
         public void OnBeforeSceneChange(LoadSceneContext _)
@@ -101,10 +108,13 @@ namespace Aura.Systems
                 action);
         }
 
+        public Cell? FindActiveCellAt(Vector2 pos) =>
+            cells.Values.SingleOrDefault(c => c.IsActive && c.IsPointInside(pos));
+
         public void OnWorldClick(Vector2 pos)
         {
             // let's find some weird places in Aura with Single
-            var cell = cells.Values.SingleOrDefault(c => c.IsActive && c.IsPointInside(pos));
+            var cell = FindActiveCellAt(pos);
             if (cell == null || interpreter == null)
                 return;
             interpreter.ExecuteSync(cell.Action);
@@ -113,6 +123,15 @@ namespace Aura.Systems
         public void RegisterGameFunctions(Interpreter interpreter)
         {
             this.interpreter = interpreter;
+        }
+
+        public void Update(float timeDelta)
+        {
+            var worldPos = cursorSystem?.WorldPos;
+            if (worldPos == null || cursorSystem == null)
+                return;
+            var cell = FindActiveCellAt(worldPos.Value);
+            cursorSystem.BackgroundType = cell == null ? CursorType.Default : cell.Cursor ?? CursorType.Active;
         }
     }
 }

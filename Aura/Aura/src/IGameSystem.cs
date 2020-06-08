@@ -10,6 +10,7 @@ namespace Aura
     {
         IReadOnlyCollection<IGameSystem> Systems { get; }
         IEnumerable<T> SystemsWith<T>() where T : IGameSystem;
+        IBackend Backend { get; }
     }
     
     public interface IGameSystem : IDisposable

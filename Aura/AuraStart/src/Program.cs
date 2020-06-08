@@ -45,6 +45,7 @@ namespace Aura.Veldrid
             var time = new GameTime();
             time.TargetFramerate = 60;
             InputSnapshot? inputSnapshot = null;
+            window.CursorVisible = false;
             var backend = new VeldridBackend(window, graphicsDevice);
             backend.AssetPath = @"C:\Program Files (x86)\Steam\steamapps\common\Aura Fate of the Ages";
             var game = new Game(backend,
