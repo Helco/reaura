@@ -40,9 +40,10 @@ namespace Aura.Veldrid
             }
         }
 
-        public PanoramaWorldRenderer(int spriteCapacity, SpriteRendererCommon common, Framebuffer framebuffer, uint worldResolution = 1024)
+        public PanoramaWorldRenderer(int spriteCapacity, SpriteRendererCommon common, Framebuffer framebuffer)
         {
             device = common.Device;
+            uint worldResolution = Math.Max(framebuffer.Width, framebuffer.Height);
             cubemap = common.Factory.CreateTexture(new TextureDescription
             {
                 Width = worldResolution,

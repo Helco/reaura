@@ -19,12 +19,14 @@ namespace Aura.Veldrid
         private Vertex[] vertices = new Vertex[0];
         private bool needVertexUpdate = true;
         private bool needSpriteUpdate = true;
+        private bool needUniformUpdate = true;
         private Texture? worldTexture = null;
+        private TextureView? worldTextureView = null;
 
         public SpriteRendererCommon Common { get; }
         public DeviceBuffer UniformBuffer { get; }
         public Fence Fence { get; }
-        public int SpriteCapacity => spriteResourceSets.Length;
+        public int SpriteCapacity => spriteResourceSets.Length - 1;
         public Texture Target { get; }
         public CubeFace TargetFace { get; }
 
@@ -34,7 +36,20 @@ namespace Aura.Veldrid
             set
             {
                 worldTexture = value;
-                needSpriteUpdate = true;
+                worldTextureView?.Dispose();
+                uint worldWidth = worldTexture?.Width ?? Target.Width;
+                uint worldHeight = worldTexture?.Height ?? Target.Height;
+                ProjectionMatrix = Matrix4x4.CreateOrthographicOffCenter(0.0f, worldWidth, worldHeight, 0.0f, 0.1f, 10.0f);
+                needUniformUpdate = true;
+
+                if (value == null)
+                    return;
+                worldTextureView = Common.Factory.CreateTextureView(new TextureViewDescription(
+                    worldTexture, 0, 1, (uint)TargetFace, 1));
+                spriteResourceSets[0]?.Dispose();
+                spriteResourceSets[0] = Common.Factory.CreateResourceSet(new ResourceSetDescription(
+                    Common.ResourceLayout, worldTextureView, Common.PointSampler, UniformBuffer));
+                SetSpriteQuadInternal(0, Vector2.Zero, new Vector2(worldWidth, worldHeight));
             }
         }
 
@@ -53,6 +68,8 @@ namespace Aura.Veldrid
                     new FramebufferAttachmentDescription(Target, (uint)TargetFace)
                 }
             });
+
+            spriteCapacity++; // reserve first for world texture
             spriteResourceSets = Enumerable.Repeat<ResourceSet?>(null, spriteCapacity).ToArray();
             indexBuffer = new QuadIndexBuffer(common.Device, spriteCapacity);
             vertexBuffer = common.Factory.CreateBuffer(new BufferDescription(
@@ -61,8 +78,7 @@ namespace Aura.Veldrid
             vertices = new Vertex[spriteCapacity * 4];
             UniformBuffer = common.Factory.CreateBuffer(
                 new BufferDescription(4 * 4 * sizeof(float), BufferUsage.UniformBuffer));
-            ProjectionMatrix = Matrix4x4.CreateOrthographicOffCenter(0.0f, target.Width, target.Height, 0.0f, 0.1f, 10.0f);
-            common.Device.UpdateBuffer(UniformBuffer, 0, ProjectionMatrix);
+            WorldTexture = null;
         }
 
         protected override void DisposeManaged()
@@ -72,12 +88,19 @@ namespace Aura.Veldrid
             indexBuffer.Dispose();
             vertexBuffer.Dispose();
             UniformBuffer.Dispose();
+            spriteResourceSets[0]?.Dispose();
+            worldTextureView?.Dispose();
         }
 
         public void SetSpriteQuad(int i, Vector2 upperLeft, Vector2 size)
         {
             if (i < 0 || i >= SpriteCapacity)
                 throw new ArgumentOutOfRangeException(nameof(i));
+            SetSpriteQuadInternal(i + 1, upperLeft, size); // first sprite is worldTexture
+        }
+
+        private void SetSpriteQuadInternal(int i, Vector2 upperLeft, Vector2 size)
+        {
             Vector2 right = Vector2.UnitX * size.X;
             Vector2 down = Vector2.UnitY * size.Y;
             vertices[i * 4 + 0] = new Vertex(upperLeft, new Vector2(0.0f, 0.0f));
@@ -91,6 +114,7 @@ namespace Aura.Veldrid
         {
             if (i < 0 || i >= SpriteCapacity)
                 throw new ArgumentOutOfRangeException(nameof(i));
+            i++; // first sprite is worldTexture
             spriteResourceSets[i] = resourceSet;
             needSpriteUpdate = true;
         }
@@ -99,7 +123,7 @@ namespace Aura.Veldrid
 
         public void Render()
         {
-            if (worldTexture == null || !needSpriteUpdate)
+            if (!needSpriteUpdate)
                 return;
             needSpriteUpdate = false;
 
@@ -110,17 +134,23 @@ namespace Aura.Veldrid
                 needVertexUpdate = false;
                 commandList.UpdateBuffer(vertexBuffer, 0, vertices);
             }
-            commandList.CopyTexture(
-                worldTexture, 0, 0, 0, 0, (uint)TargetFace,
-                Target, 0, 0, 0, 0, (uint)TargetFace,
-                Target.Width, Target.Height, 1, 1);
+            if (needUniformUpdate)
+            {
+                needUniformUpdate = false;
+                commandList.UpdateBuffer(UniformBuffer, 0, ProjectionMatrix);
+            }
+
             commandList.SetFramebuffer(framebuffer);
             commandList.SetFullViewport(0);
             commandList.SetPipeline(Common.GetPipeline(Target.Format));
             commandList.SetVertexBuffer(0, vertexBuffer);
             commandList.SetIndexBuffer(indexBuffer, IndexFormat.UInt16);
-            
-            for (int spriteI = 0; spriteI < SpriteCapacity; spriteI++)
+            if (worldTexture == null)
+            {
+                commandList.ClearColorTarget(0, RgbaFloat.Clear);
+            }
+
+            for (int spriteI = 0; spriteI <= SpriteCapacity; spriteI++)
             {
                 var resourceSet = spriteResourceSets[spriteI];
                 if (resourceSet == null)

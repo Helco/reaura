@@ -57,15 +57,15 @@ namespace Aura.Veldrid
 
         public IReadOnlyList<IWorldSprite> Sprites => sprites;
 
-        public PuzzleWorldRenderer(int spriteCapacity, SpriteRendererCommon spriteRendererCommon, Framebuffer framebuffer, uint worldWidth = 800, uint worldHeight = 500)
+        public PuzzleWorldRenderer(int spriteCapacity, SpriteRendererCommon spriteRendererCommon, Framebuffer framebuffer)
         {
             viewport = new Viewport(0.0f, 0.0f, framebuffer.Width, framebuffer.Height, -10.0f, 10.0f);
             device = spriteRendererCommon.Device;
             this.framebuffer = framebuffer;
             var factory = device.ResourceFactory;
             texture = factory.CreateTexture(new TextureDescription(
-                width: worldWidth,
-                height: worldHeight,
+                width: framebuffer.Width,
+                height: framebuffer.Height,
                 depth: 1,
                 mipLevels: 1,
                 arrayLayers: 1,
@@ -86,7 +86,7 @@ namespace Aura.Veldrid
             shaders = factory.LoadShadersFromFiles("Blit");
             var vertexLayout = new VertexLayoutDescription(new VertexElementDescription("Pos", VertexElementFormat.Float2, VertexElementSemantic.Position));
             pipeline = factory.CreateGraphicsPipeline(new GraphicsPipelineDescription(
-                BlendStateDescription.SingleOverrideBlend,
+                BlendStateDescription.SingleAlphaBlend,
                 DepthStencilStateDescription.Disabled,
                 RasterizerStateDescription.CullNone,
                 PrimitiveTopology.TriangleStrip,
@@ -115,18 +115,20 @@ namespace Aura.Veldrid
 
         public bool ConvertScreenToWorld(Vector2 screenPos, out Vector2 worldPos)
         {
-            // TODO: is world resolution always world size?
-            worldPos.X = (screenPos.X - viewport.X) / viewport.Width * texture.Width;
-            worldPos.Y = (screenPos.Y - viewport.Y) / viewport.Height * texture.Height;
-            return (worldPos.X >= 0 && worldPos.Y >= 0 && worldPos.X < texture.Width && worldPos.Y < texture.Height);
+            uint worldWidth = spriteRenderer.WorldTexture?.Width ?? texture.Width;
+            uint worldHeight = spriteRenderer.WorldTexture?.Height ?? texture.Height;
+            worldPos.X = (screenPos.X - viewport.X) / viewport.Width * worldWidth;
+            worldPos.Y = (screenPos.Y - viewport.Y) / viewport.Height * worldHeight;
+            return (worldPos.X >= 0 && worldPos.Y >= 0 && worldPos.X < worldWidth && worldPos.Y < worldHeight);
         }
 
         public bool ConvertWorldToScreen(Vector2 worldPos, out Vector2 screenPos)
         {
-            // TODO is world resolution always world size?
-            screenPos.X = worldPos.X / texture.Width * viewport.Width + viewport.X;
-            screenPos.Y = worldPos.Y / texture.Height * viewport.Height + viewport.Y;
-            return (worldPos.X >= 0 && worldPos.Y >= 0 && worldPos.X < texture.Width && worldPos.Y < texture.Height);
+            uint worldWidth = spriteRenderer.WorldTexture?.Width ?? texture.Width;
+            uint worldHeight = spriteRenderer.WorldTexture?.Height ?? texture.Height;
+            screenPos.X = worldPos.X / worldWidth * viewport.Width + viewport.X;
+            screenPos.Y = worldPos.Y / worldHeight * viewport.Height + viewport.Y;
+            return (worldPos.X >= 0 && worldPos.Y >= 0 && worldPos.X < worldWidth && worldPos.Y < worldHeight);
         }
 
         public void LoadBackground(Stream stream)
