@@ -17,13 +17,14 @@ namespace Aura.Systems
         public CursorType? Cursor { get; }
         public InstructionBlockNode Action { get; }
 
-        public Cell(string name, Vector2 upperLeft, Vector2 size, InstructionBlockNode action)
+        public Cell(string name, Vector2 upperLeft, Vector2 size, InstructionBlockNode action, CursorType? cursor)
         {
             IsActive = true;
             Name = name;
             UpperLeft = upperLeft;
             Size = size;
             Action = action;
+            Cursor = cursor;
         }
 
         public bool IsPointInside(Vector2 auraPos)
@@ -44,6 +45,14 @@ namespace Aura.Systems
 
     public class CellSystem : BaseDisposable, IObjectListSystem, IWorldInputHandler, IGameVariableSet
     {
+        private static readonly IReadOnlyDictionary<string, CursorType> CursorNames = new Dictionary<string, CursorType>()
+        {
+            { "Up_Cursor.bmp", CursorType.Up },
+            { "Down_Cursor.bmp", CursorType.Down },
+            { "Left_Cursor.bmp", CursorType.Left },
+            { "Right_Cursor.bmp", CursorType.Right },
+        };
+
         public string ObjectListName => "&Cells";
         public string VariableSetName => "Cell";
 
@@ -95,9 +104,20 @@ namespace Aura.Systems
             var posNode = ExpectProperty<VectorNode>("Pos");
             var sizeNode = ExpectProperty<VectorNode>("CellSize");
             var scriptNode = ExpectProperty<StringNode>("script");
+            var cursorNode = objectNode.Properties.GetValueOrDefault("cursor");
+            CursorType? cursor = null;
 
             if (!context.ScriptTexts.TryGetValue(scriptNode.Value.Replace(".\\", ""), out var scriptText))
                 throw new InvalidDataException($"{scriptNode.Position}: Could not find cell script {scriptNode.Value}");
+            if (cursorNode != default)
+            {
+                if (!(cursorNode.Value is VariableNode))
+                    throw new InvalidDataException($"{cursorNode.Position}: Expected cell property cursor to be StringNode");
+                var cursorName = ((VariableNode)cursorNode.Value).Set + "." + ((VariableNode)cursorNode.Value).Name;
+                if (!CursorNames.TryGetValue(cursorName, out var cursorType))
+                    throw new InvalidDataException($"{cursorNode.Position}: Invalid cursor name \"{cursorName}\"");
+                cursor = cursorType;
+            }
             var scanner = new Tokenizer(scriptNode.Value, scriptText);
             var action = new CellScriptParser(scanner).ParseCellScript();
 
@@ -105,11 +125,12 @@ namespace Aura.Systems
                 objectNode.Name,
                 new Vector2(posNode.X, posNode.Y),
                 new Vector2(sizeNode.X, sizeNode.Y),
-                action);
+                action,
+                cursor);
         }
 
         public Cell? FindActiveCellAt(Vector2 pos) =>
-            cells.Values.SingleOrDefault(c => c.IsActive && c.IsPointInside(pos));
+            cells.Values.FirstOrDefault(c => c.IsActive && c.IsPointInside(pos));
 
         public void OnWorldClick(Vector2 pos)
         {

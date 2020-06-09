@@ -112,7 +112,7 @@ namespace Aura.Systems
 
         public void OnBeforeSceneChange(LoadSceneContext context)
         {
-            Type = CursorType.Default;
+            BackgroundType = CursorType.Default;
         }
 
         public void Update(float timeDelta)
