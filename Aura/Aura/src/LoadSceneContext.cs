@@ -14,7 +14,7 @@ namespace Aura
 
     public class LoadSceneContext
     {
-        private Dictionary<string, Stream> sceneAssets = new Dictionary<string, Stream>();
+        private Dictionary<string, Func<Stream?>> sceneAssets = new Dictionary<string, Func<Stream?>>();
 
         public IBackend Backend { get; }
         public string ScenePath { get; }
@@ -57,18 +57,18 @@ namespace Aura
                 .Select(fileName =>
                 {
                     int length = (int)packFile.ReadU32();
-                    return (fileName, stream: new MemoryStream(packFile.ReadRaw(length), writable: false));
+                    return (fileName, buffer: packFile.ReadRaw(length));
                 });
             foreach (var file in files)
-                AddAssetFile(file.fileName, file.stream);
+                AddAssetFile(file.fileName, () => new MemoryStream(file.buffer, writable: false));
         }
 
-        private void AddAssetFile(string fileName, Stream stream)
+        private void AddAssetFile(string fileName, Func<Stream> streamAccessor)
         {
             fileName = fileName.ToLowerInvariant();
             if (sceneAssets.ContainsKey(fileName))
                 throw new InvalidDataException($"Scene asset {fileName} was found twice");
-            sceneAssets[fileName] = stream;
+            sceneAssets[fileName] = streamAccessor;
         }
 
         private static Dictionary<string, string> ReadScriptPack(Stream stream)
@@ -99,8 +99,8 @@ namespace Aura
             if (name.StartsWith(".\\"))
                 name = name.Substring(2);
             name = name.ToLowerInvariant();
-            return sceneAssets.TryGetValue(name, out var stream)
-                ? stream
+            return sceneAssets.TryGetValue(name, out var streamAccessor)
+                ? streamAccessor()
                 : null;
         }
 
