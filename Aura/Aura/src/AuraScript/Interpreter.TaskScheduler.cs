@@ -62,6 +62,12 @@ namespace Aura.Script
             cts = null;
         }
 
+        public void Continue()
+        {
+            if (!IsReady)
+                taskScheduler.Continue();
+        }
+
         private void ExecuteSync<TArg>(Func<TArg, CancellationToken?, Task> action, TArg arg)
         {
             // yes, this will be a deadlock if the called functions are actually asynchronous or executed on another task scheduler

@@ -57,6 +57,7 @@ namespace Aura
         {
             foreach (var ptSystem in Systems)
                 ptSystem.Update(timeDelta);
+            gameInterpreter.Continue();
             onNextUpdate?.Invoke();
             onNextUpdate = null;
         }
