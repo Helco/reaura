@@ -19,7 +19,6 @@ namespace Aura.Systems
             interpreter.RegisterFunction<int>("Fade", (a) => DummyScriptFunction("Fade"));
             interpreter.RegisterFunction<int>("UnFade", (a) => DummyScriptFunction("UnFade"));
             interpreter.RegisterFunction<int, int>("Mouse_Go_To", (a, b) => DummyScriptFunction("Mouse_Go_To"));
-            interpreter.RegisterFunction<string>("PlayFullScreenAVI", (s) => DummyScriptFunction("PlayFullScreenAVI"));
         }
 
         private void DummyScriptFunction(string name)

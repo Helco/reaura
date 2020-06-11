@@ -35,12 +35,19 @@ namespace Aura.Systems
             var graphicLists = context.Scene.EntityLists.Values.OfType<GraphicListNode>();
             int spriteCapacity = graphicLists.Sum(l => l.Graphics.Count);
             WorldRenderer?.Dispose();
-            WorldRenderer = context.Type switch
+            switch(context.Type)
             {
-                SceneType.Panorama => context.Backend.CreatePanoramaRenderer(context.SceneAssets[$"{context.SceneName}.bik"], spriteCapacity),
-                SceneType.Puzzle => context.Backend.CreatePuzzleRenderer(spriteCapacity),
-                var _ => throw new NotSupportedException($"Unsupported scene type to load world renderer {context.Type}")
-            };
+                case SceneType.Panorama:
+                    var stream = context.OpenSceneAsset($"{context.SceneName}.bik");
+                    if (stream == null)
+                        throw new FileNotFoundException($"Could not find background video for scene {context.SceneName}");
+                    WorldRenderer = context.Backend.CreatePanoramaRenderer(stream, spriteCapacity);
+                    break;
+                case SceneType.Puzzle:
+                    WorldRenderer = context.Backend.CreatePuzzleRenderer(spriteCapacity);
+                    break;
+                default: throw new NotSupportedException($"Unsupported scene type to load world renderer {context.Type}");
+            }
             context.AvailableWorldSprites = new Queue<IWorldSprite>(WorldRenderer.Sprites);
         }
 
@@ -51,7 +58,8 @@ namespace Aura.Systems
         {
             if (!IsPuzzle || WorldRenderer == null)
                 throw new InvalidProgramException("Load_Fon is only supported for puzzles");
-            if (context == null || !context.SceneAssets.TryGetValue(fonName.Replace(".\\", ""), out var fonStream))
+            using var fonStream = context?.OpenSceneAsset(fonName);
+            if (fonStream == null)
                 throw new FileNotFoundException($"Could not find background asset {fonName}");
             var puzzleRenderer = (IPuzzleWorldRenderer)WorldRenderer;
             puzzleRenderer.LoadBackground(fonStream);

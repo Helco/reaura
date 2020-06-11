@@ -18,6 +18,7 @@ namespace Aura
         void Play();
         void Pause();
         void Stop();
+        event Action OnFinished;
     }
 
     public interface IWorldSprite

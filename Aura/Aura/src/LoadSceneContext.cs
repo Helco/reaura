@@ -22,7 +22,6 @@ namespace Aura
         public SceneType Type { get; }
         public SceneNode Scene { get; }
         public IReadOnlyDictionary<string, string> ScriptTexts { get; } = new Dictionary<string, string>();
-        public IReadOnlyDictionary<string, Stream> SceneAssets => sceneAssets;
         public Queue<IWorldSprite> AvailableWorldSprites { get; set; } = new Queue<IWorldSprite>();
 
         public LoadSceneContext(IBackend backend, string sceneName, SceneType type)
@@ -66,6 +65,7 @@ namespace Aura
 
         private void AddAssetFile(string fileName, Stream stream)
         {
+            fileName = fileName.ToLowerInvariant();
             if (sceneAssets.ContainsKey(fileName))
                 throw new InvalidDataException($"Scene asset {fileName} was found twice");
             sceneAssets[fileName] = stream;
@@ -94,17 +94,30 @@ namespace Aura
             return files;
         }
 
+        public Stream? OpenSceneAsset(string name)
+        {
+            if (name.StartsWith(".\\"))
+                name = name.Substring(2);
+            name = name.ToLowerInvariant();
+            return sceneAssets.TryGetValue(name, out var stream)
+                ? stream
+                : null;
+        }
+
         public ITexture ScrArgLoadImage(ValueNode node)
         {
             var textureName = ((StringNode)node).Value;
-            if (!SceneAssets.TryGetValue(textureName.Replace(".\\", ""), out var stream))
+            using var stream = OpenSceneAsset(textureName);
+            if (stream == null)
                 throw new FileNotFoundException($"{node.Position}: Could not find texture \"{textureName}\"");
             return Backend.CreateImage(stream);
         }
+
         public ITexture ScrArgLoadVideo(ValueNode node)
         {
             var videoName = ((StringNode)node).Value;
-            if (!SceneAssets.TryGetValue(videoName.Replace(".\\", ""), out var stream))
+            var stream = OpenSceneAsset(videoName);
+            if (stream == null)
                 throw new FileNotFoundException($"{node.Position}: Could not find video \"{videoName}\"");
             return Backend.CreateVideo(stream);
         }

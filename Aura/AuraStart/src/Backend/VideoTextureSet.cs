@@ -36,6 +36,13 @@ namespace Aura.Veldrid
             public void Pause() => VideoPlayer.Pause();
             public void Play() => VideoPlayer.Play();
             public void Stop() => VideoPlayer.Stop();
+            public event Action OnFinished
+            {
+                add => VideoPlayer.OnFinished += value;
+#pragma warning disable CS8601 // null-assignment will not happen, OnFinished has (as it should) an empty lambda as default
+                remove => VideoPlayer.OnFinished -= value;
+#pragma warning restore CS8601
+            }
         }
 
         private GraphicsDevice device;

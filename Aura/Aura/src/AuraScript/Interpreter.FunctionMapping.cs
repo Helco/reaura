@@ -150,7 +150,7 @@ namespace Aura.Script
             });
         }
 
-        private Task Execute(FunctionCallNode call)
+        private async Task Execute(FunctionCallNode call)
         {
             if (!functionMappings.TryGetValue(call.Function, out var map))
                 throw new InvalidDataException($"Unknown function {call.Function}");
@@ -168,12 +168,9 @@ namespace Aura.Script
             }).ToArray();
 
             if (map.isAsync)
-                return taskFactory.StartNew(async () => await (Task)map.method.Invoke(map.thiz, args)!);
+                await (Task)map.method.Invoke(map.thiz, args)!;
             else
-            {
                 map.method.Invoke(map.thiz, args);
-                return Task.CompletedTask;
-            }
         }
 
         private static readonly Regex FunctionPrefix = new Regex(@"^Scr");

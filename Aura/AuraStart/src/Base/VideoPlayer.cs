@@ -23,6 +23,7 @@ namespace Aura.Veldrid
         public bool IsStopped => !IsPlaying && Time == 0.0;
         public bool IsPaused => !IsPlaying && Time > 0.0;
         public bool IsLooping { get; set; } = true;
+        public Action OnFinished = () => { };
 
         public VideoPlayer(GraphicsDevice graphicsDevice, string fileName)
             : this(graphicsDevice, new FileStream(fileName, FileMode.Open, FileAccess.Read)) { }
@@ -103,6 +104,7 @@ namespace Aura.Veldrid
             if (ImageTrack.IsFinished)
             {
                 Stop();
+                OnFinished();
                 if (IsLooping)
                 {
                     Play();

@@ -110,6 +110,13 @@ namespace Aura.Systems
             }
         }
 
+        public void RegisterGameFunctions(Interpreter interpreter)
+        {
+            foreach (var value in Enum.GetValues(typeof(CursorType)))
+                interpreter.RegisterGlobalValue($"{value}", () => (int)value!);
+            interpreter.RegisterGlobalValue("Cursor", () => (int)(ForegroundType ?? CursorType.Default));
+        }
+
         public void OnBeforeSceneChange(LoadSceneContext context)
         {
             BackgroundType = CursorType.Default;
@@ -121,5 +128,10 @@ namespace Aura.Systems
                 return;
             sprite.Position = backend.CursorPosition - sprite.Texture.Size / 2.0f;
         }
+
+        [ScriptFunction]
+        private void SetCursorEmpty() => ForegroundType = CursorType.Empty;
+        [ScriptFunction]
+        private void SetCursorDefault() => ForegroundType = null;
     }
 }

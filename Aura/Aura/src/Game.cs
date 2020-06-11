@@ -28,9 +28,11 @@ namespace Aura
                 new GlobalsSystem(Backend),
                 new InventorySystem(Backend),
                 new SpriteSystem(),
+                new AnimateSystem(),
                 new FonAnimateSystem(),
                 new CellSystem(),
                 new CursorSystem(),
+                new FullScreenVideoSystem(),
                 new DummyScriptSystem()
             }.Concat(backendSystems).ToArray();
             foreach (var system in Systems)
