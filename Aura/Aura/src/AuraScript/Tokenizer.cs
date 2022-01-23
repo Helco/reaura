@@ -139,7 +139,7 @@ namespace Aura.Script
                 if (ch == '\"')
                 {
                     Read();
-                    string value = ReadWhile("", c => !char.IsControl(c) && c != '\"');
+                    string value = ReadWhile("", c => c >= 128 || (!char.IsControl(c) && c != '\"'));
                     if (Peek() != '\"')
                         throw new Exception($"Unexpected symbol '{(char)Peek()}', expected '\"'");
                     Read();
