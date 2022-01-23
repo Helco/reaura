@@ -116,6 +116,8 @@ namespace Aura
         public ITexture ScrArgLoadVideo(ValueNode node)
         {
             var videoName = ((StringNode)node).Value;
+            if (videoName.Contains("An_")) // weird stuff, two puzzle scenes use it with no visible difference...
+                return null!;
             var stream = OpenSceneAsset(videoName);
             if (stream == null)
                 throw new FileNotFoundException($"{node.Position}: Could not find video \"{videoName}\"");

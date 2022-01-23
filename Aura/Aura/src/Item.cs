@@ -26,9 +26,9 @@ namespace Aura
             {
                 if (!objectNode.Properties.TryGetValue(name, out var propNode))
                     throw new InvalidDataException($"{objectNode.Position}: Missing property \"{name}\"");
-                if (!(propNode.Value is StringNode))
+                if (propNode.Value is not StringNode stringNode)
                     throw new InvalidDataException($"{propNode.Position}: Invalid value type for property \"{name}\"");
-                return ((StringNode)propNode.Value).Value;
+                return stringNode.Value;
             }
 
             if (!NameRegex.IsMatch(objectNode.Name))
