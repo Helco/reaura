@@ -20,6 +20,7 @@ namespace Aura.Script
         {
             { "TRUE", () => 1 },
             { "FALSE", () => 0 },
+            { "KILLED", () => -1 },
             { "ACTIVE", () => 1 },
             { "NOACTIVE", () => 0 },
         };
